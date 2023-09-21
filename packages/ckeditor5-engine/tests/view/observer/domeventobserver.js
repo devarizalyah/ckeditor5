@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -122,6 +122,28 @@ describe( 'DomEventObserver', () => {
 		expect( evtSpy.called ).to.be.false;
 	} );
 
+	it( 'should not fire event if the target is ignored', () => {
+		const domElement = document.createElement( 'p' );
+		const domEvent = new MouseEvent( 'click' );
+		const evtSpy = sinon.spy();
+
+		const ignoreEventFromTargetStub = sinon
+			.stub( Observer.prototype, 'checkShouldIgnoreEventFromTarget' )
+			.returns( true );
+
+		createViewRoot( viewDocument );
+		view.attachDomRoot( domElement );
+		view.addObserver( ClickObserver );
+		viewDocument.on( 'click', evtSpy );
+
+		domElement.dispatchEvent( domEvent );
+
+		ignoreEventFromTargetStub.restore();
+
+		expect( ignoreEventFromTargetStub.called ).to.be.true;
+		expect( evtSpy.called ).to.be.false;
+	} );
+
 	it( 'should fire event if observer is disabled and re-enabled', () => {
 		const domElement = document.createElement( 'p' );
 		const domEvent = new MouseEvent( 'click' );
@@ -229,6 +251,25 @@ describe( 'DomEventObserver', () => {
 			testObserver.fire( 'click', {} );
 
 			expect( fireSpy.calledOnce ).to.be.true;
+		} );
+	} );
+
+	describe( 'stopListening()', () => {
+		it( 'should stop listening to events fired by DOM element', () => {
+			const domElement = document.createElement( 'p' );
+			const domEvent = new MouseEvent( 'click' );
+			const evtSpy = sinon.spy();
+
+			createViewRoot( viewDocument );
+			view.attachDomRoot( domElement );
+			view.addObserver( ClickObserver );
+			viewDocument.on( 'click', evtSpy );
+
+			view.getObserver( ClickObserver ).stopListening( domElement );
+
+			domElement.dispatchEvent( domEvent );
+
+			expect( evtSpy.called ).to.be.false;
 		} );
 	} );
 } );

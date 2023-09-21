@@ -1,4 +1,4 @@
-# Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+# Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
 #
 #                                     !!! IMPORTANT !!!
 #
@@ -12,9 +12,10 @@
 #
 msgid ""
 msgstr ""
-"Language-Team: Danish (https://www.transifex.com/ckeditor/teams/11143/da/)\n"
+"Language-Team: Danish (https://app.transifex.com/ckeditor/teams/11143/da/)\n"
 "Language: da\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 
 msgctxt "Label for the insert table toolbar button."
 msgid "Insert table"
@@ -38,7 +39,7 @@ msgstr "Slet kolonne"
 
 msgctxt "Label for the select the entire table column button."
 msgid "Select column"
-msgstr ""
+msgstr "Vælg kolonne"
 
 msgctxt "Label for the table column dropdown button."
 msgid "Column"
@@ -62,7 +63,7 @@ msgstr "Slet række"
 
 msgctxt "Label for the select the entire table row button."
 msgid "Select row"
-msgstr ""
+msgstr "Vælg række"
 
 msgctxt "Label for the table row dropdown button."
 msgid "Row"
@@ -246,4 +247,16 @@ msgstr "Værdien er ugyldig. Prøv \"10px\" eller \"2em\" eller ganske enkelt \"
 
 msgctxt "The label used by assistive technologies describing a button that opens a color picker, where user can choose a configured color for a certain properties (eg.: background color, color, border-color etc.)."
 msgid "Color picker"
-msgstr ""
+msgstr "Farvevælger"
+
+msgctxt "The button label for the table toolbar hiding caption attached to the table."
+msgid "Toggle caption off"
+msgstr "Slå billedtekst fra"
+
+msgctxt "The button label for the table toolbar showing caption attached to the table."
+msgid "Toggle caption on"
+msgstr "Slå billedtekst til"
+
+msgctxt "The placeholder text for the table caption displayed when the caption is empty."
+msgid "Enter table caption"
+msgstr "Indtast tabeltekst"

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -10,44 +10,36 @@
 'use strict';
 
 const buildApiDocs = require( './buildapi' );
-
-const skipLiveSnippets = process.argv.includes( '--skip-snippets' );
-const skipApi = process.argv.includes( '--skip-api' );
-const skipValidation = process.argv.includes( '--skip-validation' );
-const production = process.argv.includes( '--production' );
-const watch = process.argv.includes( '--watch' );
-const verbose = process.argv.includes( '--verbose' );
-const allowedSnippets = process.argv.find( item => item.startsWith( '--snippets=' ) );
+const parseArguments = require( './parse-arguments' );
 
 buildDocs();
 
 function buildDocs() {
+	const options = parseArguments( process.argv.slice( 2 ) );
+
 	let promise;
 
-	if ( skipApi ) {
+	if ( options.skipApi ) {
 		promise = Promise.resolve();
 	} else {
-		promise = buildApiDocs()
-			.catch( err => {
-				console.error( err );
-
-				process.exitCode = 1;
-			} );
+		promise = buildApiDocs();
 	}
 
-	promise
+	return promise
 		.then( () => {
-			return runUmberto( {
-				skipLiveSnippets,
-				skipApi,
-				skipValidation,
-				production,
-				watch,
-				verbose
-			} );
+			return runUmberto( options );
+		} )
+		.catch( err => {
+			console.error( err );
+
+			process.exitCode = 1;
 		} );
 }
 
+/**
+ * @param {DocumentationOptions} options
+ * @return {Promise}
+ */
 function runUmberto( options ) {
 	const umberto = require( 'umberto' );
 
@@ -55,14 +47,16 @@ function runUmberto( options ) {
 		configDir: 'docs',
 		clean: true,
 		dev: !options.production,
-		skipLiveSnippets: options.skipLiveSnippets,
+		skipLiveSnippets: options.skipSnippets,
 		skipValidation: options.skipValidation,
 		snippetOptions: {
 			production: options.production,
-			allowedSnippets: allowedSnippets ? allowedSnippets.replace( '--snippets=', '' ).split( ',' ) : []
+			allowedSnippets: options.snippets
 		},
 		skipApi: options.skipApi,
+		skipGuides: options.skipGuides,
 		verbose: options.verbose,
-		watch: options.watch
+		watch: options.watch,
+		guides: options.guides
 	} );
 }

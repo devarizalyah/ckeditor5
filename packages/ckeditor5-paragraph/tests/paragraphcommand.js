@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -100,6 +100,15 @@ describe( 'ParagraphCommand', () => {
 			expect( command.value ).to.be.true;
 		} );
 
+		it( 'should not execute when selection is in non-editable place', () => {
+			setData( model, '<heading1>[]</heading1>' );
+
+			model.document.isReadOnly = true;
+			command.execute();
+
+			expect( getData( model ) ).to.equal( '<heading1>[]</heading1>' );
+		} );
+
 		// https://github.com/ckeditor/ckeditor5-paragraph/issues/24
 		it( 'should not rename blocks which cannot become paragraphs (paragraph is not allowed in their parent)', () => {
 			model.schema.register( 'restricted', { allowIn: '$root' } );
@@ -132,7 +141,7 @@ describe( 'ParagraphCommand', () => {
 		} );
 
 		it( 'should not rename blocks which cannot become paragraphs (block is an object)', () => {
-			model.schema.register( 'image', {
+			model.schema.register( 'imageBlock', {
 				isBlock: true,
 				isObject: true,
 				allowIn: '$root'
@@ -141,7 +150,7 @@ describe( 'ParagraphCommand', () => {
 			setData(
 				model,
 				'<heading1>a[bc</heading1>' +
-				'<image></image>' +
+				'<imageBlock></imageBlock>' +
 				'<heading1>de]f</heading1>'
 			);
 
@@ -149,7 +158,7 @@ describe( 'ParagraphCommand', () => {
 
 			expect( getData( model ) ).to.equal(
 				'<paragraph>a[bc</paragraph>' +
-				'<image></image>' +
+				'<imageBlock></imageBlock>' +
 				'<paragraph>de]f</paragraph>'
 			);
 		} );
@@ -219,11 +228,11 @@ describe( 'ParagraphCommand', () => {
 			it( 'converts all elements where selection is applied', () => {
 				schema.register( 'heading2', { inheritAllFrom: '$block' } );
 
-				setData( model, '<heading1>foo[</heading1><heading2>bar</heading2><heading2>baz]</heading2>' );
+				setData( model, '<heading1>fo[o</heading1><heading2>bar</heading2><heading2>baz]</heading2>' );
 
 				command.execute();
 				expect( getData( model ) ).to.equal(
-					'<paragraph>foo[</paragraph><paragraph>bar</paragraph><paragraph>baz]</paragraph>'
+					'<paragraph>fo[o</paragraph><paragraph>bar</paragraph><paragraph>baz]</paragraph>'
 				);
 			} );
 

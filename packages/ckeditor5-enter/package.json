@@ -1,30 +1,32 @@
 {
   "name": "@ckeditor/ckeditor5-enter",
-  "version": "21.0.0",
+  "version": "39.0.2",
   "description": "Enter feature for CKEditor 5.",
   "keywords": [
     "ckeditor",
     "ckeditor5",
     "ckeditor 5",
     "ckeditor5-feature",
-    "ckeditor5-plugin"
+    "ckeditor5-plugin",
+    "ckeditor5-dll"
   ],
+  "main": "src/index.ts",
   "dependencies": {
-    "@ckeditor/ckeditor5-core": "^21.0.0",
-    "@ckeditor/ckeditor5-engine": "^21.0.0",
-    "@ckeditor/ckeditor5-utils": "^21.0.0"
+    "@ckeditor/ckeditor5-core": "39.0.2",
+    "@ckeditor/ckeditor5-engine": "39.0.2",
+    "@ckeditor/ckeditor5-utils": "39.0.2"
   },
   "devDependencies": {
-    "@ckeditor/ckeditor5-basic-styles": "^21.0.0",
-    "@ckeditor/ckeditor5-editor-classic": "^21.0.0",
-    "@ckeditor/ckeditor5-heading": "^21.0.0",
-    "@ckeditor/ckeditor5-paragraph": "^21.0.0",
-    "@ckeditor/ckeditor5-typing": "^21.0.0",
-    "@ckeditor/ckeditor5-undo": "^21.0.0"
-  },
-  "engines": {
-    "node": ">=12.0.0",
-    "npm": ">=5.7.1"
+    "@ckeditor/ckeditor5-basic-styles": "39.0.2",
+    "@ckeditor/ckeditor5-editor-classic": "39.0.2",
+    "@ckeditor/ckeditor5-heading": "39.0.2",
+    "@ckeditor/ckeditor5-link": "39.0.2",
+    "@ckeditor/ckeditor5-paragraph": "39.0.2",
+    "@ckeditor/ckeditor5-typing": "39.0.2",
+    "@ckeditor/ckeditor5-undo": "39.0.2",
+    "typescript": "^4.8.4",
+    "webpack": "^5.58.1",
+    "webpack-cli": "^4.9.0"
   },
   "author": "CKSource (http://cksource.com/)",
   "license": "GPL-2.0-or-later",
@@ -37,7 +39,13 @@
   },
   "files": [
     "lang",
-    "src",
-    "theme"
-  ]
+    "src/**/*.js",
+    "src/**/*.d.ts",
+    "theme",
+    "ckeditor5-metadata.json",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json"
+  }
 }

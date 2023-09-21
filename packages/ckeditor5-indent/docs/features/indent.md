@@ -1,23 +1,26 @@
 ---
 title: Block indentation
 category: features
+meta-title: Block indentation | CKEditor 5 Documentation
 ---
 
 {@snippet features/build-indent-source}
 
-The block indentation feature allows you to set indentation for text blocks such as paragraphs or headings and lists. It is implemented by three plugins: {@link module:indent/indent~Indent}, {@link module:indent/indentblock~IndentBlock} and {@link module:list/list~List}.
-
-<info-box info>
-	Block indentation can be removed with the {@link features/remove-format remove format} feature.
-</info-box>
+The block indentation feature lets you set indentation for text blocks such as paragraphs, headings, or lists. This way you can visually distinguish parts of your content.
 
 ## Demo
 
+Use the indent {@icon @ckeditor/ckeditor5-indent/theme/icons/indent.svg Indent} or outdent {@icon @ckeditor/ckeditor5-indent/theme/icons/outdent.svg Outdent} toolbar buttons in the editor below to change the indentation level. Try this on different elements: paragraphs, headings, and list items.
+
 {@snippet features/indent}
+
+<info-box info>
+	This demo only presents a limited set of features. Visit the {@link examples/builds/full-featured-editor feature-rich editor example} to see more in action.
+</info-box>
 
 ## Configuring the block indentation feature
 
-This feature offers a few configuration options that can be used to adjust the text block indentation behavior.
+This feature offers a few configuration options that can be used to adjust the text block indentation behavior. It is implemented by three plugins: {@link module:indent/indent~Indent}, {@link module:indent/indentblock~IndentBlock} and {@link module:list/list~List}.
 
 ### Using offset and unit
 
@@ -28,11 +31,11 @@ The rich-text editor from the {@link features/indent#demo demo} section above us
 You can change that value to, for example, `1em`:
 
 ```js
-import Indent from '@ckeditor/ckeditor5-indent/src/indent';
+import { Indent } from '@ckeditor/ckeditor5-indent';
 
 ClassicEditor
 	.create( document.querySelector( '#editor' ), {
-		plugins: [ Indent, ... ],
+		plugins: [ Indent, /* ... */ ],
 		toolbar: {
 			items: [ 'heading', '|', 'outdent', 'indent', '|', 'bulletedList', 'numberedList', '|', 'undo', 'redo' ]
 		},
@@ -41,8 +44,8 @@ ClassicEditor
 			unit: 'em'
 		}
 	} )
-	.then( ... )
-	.catch( ... );
+	.then( /* ... */ )
+	.catch( /* ... */ );
 ```
 
 ### Using CSS classes
@@ -52,12 +55,11 @@ If you want more semantics in your content, use CSS classes instead of fixed ind
 Here is how you can configure the block indentation feature to set indentation by applying one of the defined CSS classes:
 
 ```js
-import Indent from '@ckeditor/ckeditor5-indent/src/indent';
-import IndentBlock from '@ckeditor/ckeditor5-indent/src/indentblock';
+import { Indent, IndentBlock } from '@ckeditor/ckeditor5-indent';
 
 ClassicEditor
 	.create( document.querySelector( '#editor' ), {
-		plugins: [ Indent, IndentBlock, ... ],
+		plugins: [ Indent, IndentBlock, /* ... */ ],
 		toolbar: {
 			items: [ 'heading', '|', 'outdent', 'indent', '|', 'bulletedList', 'numberedList', '|', 'undo', 'redo' ]
 		},
@@ -69,13 +71,13 @@ ClassicEditor
 			]
 		}
 	} )
-	.then( ... )
-	.catch( ... );
+	.then( /* ... */ )
+	.catch( /* ... */ );
 ```
 
 Using classes instead of fixed units (`px` or `em`) has another advantage &mdash; you retain control over what indentation levels are used in the documents. For instance, you can limit indentation to 2 or 3 different levels and there is no way the users can go beyond that. In the example above, the `.custom-block-indent-c` class level is the maximum allowed indentation value. This should help keep your content clean and predictable.
 
-In this configuration the WYSIWYG editor will restrict indentation levels to the set of provided classes. The class with the last index in the array has the biggest indentation.
+In this configuration, the WYSIWYG editor will restrict indentation levels to the set of provided classes. The class with the last index in the array has the biggest indentation.
 
 In the demo below the CSS classes are defined as follows:
 
@@ -110,9 +112,13 @@ The target behavior comes from two other plugins:
 * {@link module:indent/indentblock~IndentBlock} &ndash; The indent block feature controls the indentation of elements such as paragraphs and headings.
 * {@link module:list/list~List} &ndash; The list feature implements the indentation (nesting) of lists.
 
-This means that if you want to allow indenting lists only, you can do that by loading only the `Indent` and `List` plugins. If you want the full behavior, you need to load all 3 plugins (`Indent`, `IndentBlock` and `List`).
+This means that if you want to allow indenting lists only, you can do that by loading only the `Indent` and `List` plugins. If you want the full behavior, you need to load all 3 plugins (`Indent`, `IndentBlock`, and `List`).
 
 ## Installation
+
+<info-box info>
+	The block indent feature is enabled by default in the {@link installation/getting-started/predefined-builds#document-editor document editor build} and {@link installation/getting-started/predefined-builds#superbuild superbuild} only.
+</info-box>
 
 To add this feature to your editor, install the [`@ckeditor/ckeditor5-indent`](https://www.npmjs.com/package/@ckeditor/ckeditor5-indent) package:
 
@@ -123,20 +129,31 @@ npm install --save @ckeditor/ckeditor5-indent
 Then add it to your plugin list and the toolbar configuration:
 
 ```js
-import Indent from '@ckeditor/ckeditor5-indent/src/indent';
-import IndentBlock from '@ckeditor/ckeditor5-indent/src/indentblock';
+import { Indent, IndentBlock } from '@ckeditor/ckeditor5-indent';
 
 ClassicEditor
 	.create( document.querySelector( '#editor' ), {
-		plugins: [ Indent, IndentBlock, ... ],
-		toolbar: [ 'outdent', 'indent', ... ]
+		plugins: [ Indent, IndentBlock, /* ... */ ],
+		toolbar: [ 'outdent', 'indent', /* ... */ ]
 	} )
-	.then( ... )
-	.catch( ... );
+	.then( /* ... */ )
+	.catch( /* ... */ );
 ```
 
 <info-box info>
-	Read more about {@link builds/guides/integration/installing-plugins installing plugins}.
+	Read more about {@link installation/plugins/installing-plugins installing plugins}.
+</info-box>
+
+## Related features
+
+Here are some CKEditor&nbsp;5 features that may help structure your content better:
+* {@link features/block-quote Block quote} &ndash; Include block quotations or pull quotes in your rich-text content.
+* {@link features/headings Headings} &ndash; Divide your content into sections.
+* {@link features/code-blocks Code block} &ndash; Insert longer, multiline code listings.
+* {@link features/text-alignment Text alignment} &ndash; Because it does matter whether the content is left, right, centered, or justified.
+
+<info-box info>
+	Block indentation can be removed with the {@link features/remove-format remove format} feature.
 </info-box>
 
 ## Common API
@@ -174,9 +191,9 @@ The {@link module:indent/indentblock~IndentBlock} plugin registers the following
 	```
 
 <info-box>
-	We recommend using the official {@link framework/guides/development-tools#ckeditor-5-inspector CKEditor 5 inspector} for development and debugging. It will give you tons of useful information about the state of the editor such as internal data structures, selection, commands, and many more.
+	We recommend using the official {@link framework/development-tools/inspector CKEditor&nbsp;5 inspector} for development and debugging. It will give you tons of useful information about the state of the editor such as internal data structures, selection, commands, and many more.
 </info-box>
 
 ## Contribute
 
-The source code of the feature is available on GitHub in https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-font.
+The source code of the feature is available on GitHub at [https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-font](https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-font).

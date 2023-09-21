@@ -1,23 +1,35 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 /* globals console, window, document */
 
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic/src/ckeditor';
-import Base64UploadAdapter from '@ckeditor/ckeditor5-upload/src/adapters/base64uploadadapter';
+import { Base64UploadAdapter } from '@ckeditor/ckeditor5-upload';
+
+// Umberto combines all `packages/*/docs` into the `docs/` directory. The import path must be valid after merging all directories.
+import ClassicEditor from '../build-classic';
 
 ClassicEditor.builtinPlugins.push( Base64UploadAdapter );
 
 ClassicEditor
 	.create( document.querySelector( '#snippet-image-base64-upload' ), {
-		toolbar: {
-			viewportTopOffset: window.getViewportTopOffsetConfig()
+		ui: {
+			viewportOffset: {
+				top: window.getViewportTopOffsetConfig()
+			}
 		}
 	} )
 	.then( editor => {
 		window.editor = editor;
+
+		window.attachTourBalloon( {
+			target: window.findToolbarItem(
+				editor.ui.view.toolbar, item => item.buttonView && item.buttonView.label && item.buttonView.label === 'Insert image'
+			),
+			text: 'Click to insert an image.',
+			editor
+		} );
 	} )
 	.catch( err => {
 		console.error( err.stack );

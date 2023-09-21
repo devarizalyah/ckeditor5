@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -58,6 +58,7 @@ describe( 'HighlightUI', () => {
 			} )
 			.then( newEditor => {
 				editor = newEditor;
+				command = editor.commands.get( 'highlight' );
 			} );
 	} );
 
@@ -67,29 +68,41 @@ describe( 'HighlightUI', () => {
 		return editor.destroy();
 	} );
 
-	describe( 'highlight Dropdown', () => {
+	describe( 'highlight dropdown', () => {
 		let dropdown;
 
 		beforeEach( () => {
-			command = editor.commands.get( 'highlight' );
 			dropdown = editor.ui.componentFactory.create( 'highlight' );
 		} );
 
 		it( 'button has the base properties', () => {
 			const button = dropdown.buttonView;
 
-			expect( button ).to.have.property( 'tooltip', 'Highlight' );
+			expect( button ).to.have.property( 'label', 'Highlight' );
+			expect( button ).to.have.property( 'tooltip', true );
 			expect( button ).to.have.property( 'icon', markerIcon );
 			expect( button ).to.have.property( 'isToggleable', true );
 		} );
 
 		it( 'toolbar nas the basic properties', () => {
+			// Make sure that toolbar view is not created before first dropdown open.
+			expect( dropdown.toolbarView ).to.be.undefined;
+
+			// Trigger toolbar view creation (lazy init).
+			dropdown.isOpen = true;
+
 			const toolbarView = dropdown.toolbarView;
 
 			expect( toolbarView ).to.have.property( 'ariaLabel', 'Text highlight toolbar' );
 		} );
 
 		it( 'should have proper icons in dropdown', () => {
+			// Make sure that toolbar view is not created before first dropdown open.
+			expect( dropdown.toolbarView ).to.be.undefined;
+
+			// Trigger toolbar view creation (lazy init).
+			dropdown.isOpen = true;
+
 			const toolbar = dropdown.toolbarView;
 
 			// Not in a selection with highlight.
@@ -100,6 +113,12 @@ describe( 'HighlightUI', () => {
 		} );
 
 		it( 'should have proper colors in dropdown', () => {
+			// Make sure that toolbar view is not created before first dropdown open.
+			expect( dropdown.toolbarView ).to.be.undefined;
+
+			// Trigger toolbar view creation (lazy init).
+			dropdown.isOpen = true;
+
 			const toolbar = dropdown.toolbarView;
 
 			expect( toolbar.items.map( item => item.iconView && item.iconView.fillColor ) ).to.deep.equal( [
@@ -115,6 +134,12 @@ describe( 'HighlightUI', () => {
 		} );
 
 		it( 'should activate current option in dropdown', () => {
+			// Make sure that toolbar view is not created before first dropdown open.
+			expect( dropdown.toolbarView ).to.be.undefined;
+
+			// Trigger toolbar view creation (lazy init).
+			dropdown.isOpen = true;
+
 			const toolbar = dropdown.toolbarView;
 
 			// Not in a selection with highlight.
@@ -131,7 +156,34 @@ describe( 'HighlightUI', () => {
 				.to.deep.equal( [ false, true, false, false, false, false, undefined, false ] );
 		} );
 
+		it( 'should focus the first active button when dropdown is opened', () => {
+			dropdown.render();
+			document.body.appendChild( dropdown.element );
+
+			// Make sure that toolbar view is not created before first dropdown open.
+			expect( dropdown.toolbarView ).to.be.undefined;
+
+			// Trigger toolbar view creation (lazy init).
+			dropdown.isOpen = true;
+			dropdown.isOpen = false;
+
+			const greenMarker = dropdown.toolbarView.items.get( 1 );
+			const spy = sinon.spy( greenMarker, 'focus' );
+
+			greenMarker.isOn = true;
+			dropdown.isOpen = true;
+			sinon.assert.calledOnce( spy );
+
+			dropdown.element.remove();
+		} );
+
 		it( 'should mark as toggleable all markers and pens', () => {
+			// Make sure that toolbar view is not created before first dropdown open.
+			expect( dropdown.toolbarView ).to.be.undefined;
+
+			// Trigger toolbar view creation (lazy init).
+			dropdown.isOpen = true;
+
 			const toolbar = dropdown.toolbarView;
 
 			expect( toolbar.items.map( item => item.isToggleable ) )
@@ -142,9 +194,22 @@ describe( 'HighlightUI', () => {
 			let button, buttons, options;
 
 			beforeEach( () => {
+				dropdown.render();
+				document.body.appendChild( dropdown.element );
+
+				// Make sure that toolbar view is not created before first dropdown open.
+				expect( dropdown.toolbarView ).to.be.undefined;
+
+				// Trigger toolbar view creation (lazy init).
+				dropdown.isOpen = true;
+
 				button = dropdown.buttonView;
 				buttons = dropdown.toolbarView.items.map( b => b );
 				options = editor.config.get( 'highlight.options' );
+			} );
+
+			afterEach( () => {
+				dropdown.element.remove();
 			} );
 
 			function validateButton( which ) {
@@ -179,6 +244,15 @@ describe( 'HighlightUI', () => {
 				validateButton( 5 );
 			} );
 
+			it( 'should execute the command only once', () => {
+				const executeSpy = sinon.spy( command, 'execute' );
+
+				buttons[ 5 ].fire( 'execute' );
+
+				sinon.assert.calledOnce( executeSpy );
+				sinon.assert.calledWith( executeSpy, { value: 'greenPen' } );
+			} );
+
 			it( 'should focus view after command execution', () => {
 				const focusSpy = testUtils.sinon.spy( editor.editing.view, 'focus' );
 
@@ -208,10 +282,16 @@ describe( 'HighlightUI', () => {
 			it( 'works for the #buttonView', () => {
 				const buttonView = dropdown.buttonView;
 
-				expect( buttonView.tooltip ).to.equal( 'Zakreślacz' );
+				expect( buttonView.label ).to.equal( 'Zakreślacz' );
 			} );
 
 			it( 'works for the listView#items in the panel', () => {
+				// Make sure that toolbar view is not created before first dropdown open.
+				expect( dropdown.toolbarView ).to.be.undefined;
+
+				// Trigger toolbar view creation (lazy init).
+				dropdown.isOpen = true;
+
 				const listView = dropdown.toolbarView;
 
 				expect( listView.items.map( item => item.label ).filter( label => !!label ) ).to.deep.equal( [
@@ -244,6 +324,40 @@ describe( 'HighlightUI', () => {
 						return newEditor.destroy();
 					} );
 			}
+		} );
+	} );
+
+	describe( 'highlight remove', () => {
+		let removeHighlightButton;
+
+		beforeEach( () => {
+			removeHighlightButton = editor.ui.componentFactory.create( 'removeHighlight' );
+		} );
+
+		it( 'removeButton has the base properties', () => {
+			expect( editor.ui.componentFactory.has( 'removeHighlight' ) ).to.be.true;
+			expect( removeHighlightButton ).to.have.property( 'tooltip', true );
+			expect( removeHighlightButton ).to.have.property( 'label', 'Remove highlight' );
+			expect( removeHighlightButton ).to.have.property( 'icon', eraserIcon );
+		} );
+
+		it( 'should execute the command only once', () => {
+			const executeSpy = sinon.spy( command, 'execute' );
+
+			removeHighlightButton.fire( 'execute' );
+
+			sinon.assert.calledOnce( executeSpy );
+			sinon.assert.calledWith( executeSpy, { value: null } );
+		} );
+
+		describe( 'model to command binding', () => {
+			it( 'isEnabled', () => {
+				command.isEnabled = false;
+				expect( removeHighlightButton.isEnabled ).to.be.false;
+
+				command.isEnabled = true;
+				expect( removeHighlightButton.isEnabled ).to.be.true;
+			} );
 		} );
 	} );
 } );

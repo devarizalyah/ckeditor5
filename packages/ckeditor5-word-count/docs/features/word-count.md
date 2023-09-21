@@ -1,17 +1,24 @@
 ---
 category: features
 menu-title: Word and character count
+meta-title: Word and character count | CKEditor 5 Documentation
 ---
 
 {@snippet features/build-word-count-source}
 
 # Word count and character count
 
-The {@link module:word-count/wordcount~WordCount} feature provides a possibility to track the number of words and characters written in the rich-text editor.
+The word count feature lets you track the number of words and characters in the editor. This helps you control the volume of your content and check the progress of your work.
 
 ## Demo
 
+Add or remove some content and see how the counter below the editor changes in real time.
+
 {@snippet features/word-count}
+
+<info-box info>
+	This demo only presents a limited set of features. Visit the {@link examples/builds/full-featured-editor feature-rich editor example} to see more in action.
+</info-box>
 
 The example above was created by using the following HTML page structure:
 
@@ -35,7 +42,7 @@ ClassicEditor
 
 		wordCountWrapper.appendChild( wordCountPlugin.wordCountContainer );
 	} )
-	.catch( ... );
+	.catch( /* ... */ );
 ```
 
 ## Configuration
@@ -47,7 +54,7 @@ The word count and character count feature is quite flexible and there are a few
 There are two ways how you can inject the word count statistics into your page:
 
 * By using the {@link module:word-count/wordcount~WordCount#wordCountContainer `WordCount#wordCountContainer`} property as shown in the example above.
-* By specifying where the word count feature should insert its container which can be done by using {@link module:word-count/wordcount~WordCountConfig#container `config.wordCount.container`}.
+* By specifying where the word count feature should insert its container which can be done by using {@link module:word-count/wordcountconfig~WordCountConfig#container `config.wordCount.container`}.
 
 The word count plugin renders its output as:
 
@@ -64,17 +71,17 @@ If you wish to render the statistics differently, see the [`update` event](#reac
 
 There are two configuration options available that change the output of the word count and character count features:
 
-* If the {@link module:word-count/wordcount~WordCountConfig#displayWords `config.wordCount.displayWords`} option is set to `false`, the word counter will be hidden.
-* If the {@link module:word-count/wordcount~WordCountConfig#displayCharacters `config.wordCount.displayCharacters`} option is set to `false`, the character counter will be hidden.
+* If the {@link module:word-count/wordcountconfig~WordCountConfig#displayWords `config.wordCount.displayWords`} option is set to `false`, the word counter will be hidden.
+* If the {@link module:word-count/wordcountconfig~WordCountConfig#displayCharacters `config.wordCount.displayCharacters`} option is set to `false`, the character counter will be hidden.
 
 ### Reacting to updates
 
-You can execute your custom callback every time content statistics change by defining {@link module:word-count/wordcount~WordCountConfig#onUpdate `config.wordCount.onUpdate`} in the editor configuration:
+You can execute your custom callback every time content statistics change by defining {@link module:word-count/wordcountconfig~WordCountConfig#onUpdate `config.wordCount.onUpdate`} in the editor configuration:
 
 ```js
 ClassicEditor
 	.create( document.querySelector( '#editor' ), {
-		plugins: [ WordCount, ... ],
+		plugins: [ WordCount, /* ... */ ],
 		wordCount: {
 			onUpdate: stats => {
 				// Prints the current content statistics.
@@ -82,13 +89,13 @@ ClassicEditor
 			}
 		}
 	} )
-	.then( ... )
-	.catch( ... );
+	.then( /* ... */ )
+	.catch( /* ... */ );
 ```
 
 **Note**: For performance reasons, your callback will be throttled and may not be up–to–date. Use the {@link module:word-count/wordcount~WordCount#characters} and {@link module:word-count/wordcount~WordCount#words} plugin properties to retrieve the precise numbers on demand.
 
-Below you can play with a demo post editor with a soft 120 characters limit and a progress chart below indicating how many characters are in the content. The progress chart changes its color as the limit is near or exceeded. Type in the editor to see the feature in action. See the code used to create the demo listed below in this section.
+Below you can play with a demo post editor with a soft 120-character limit. The progress chart underneath it indicates the number of characters in the content. The chart changes its color as the number nears or exceeds the limit. Type in the editor to see the feature in action. See the code used to create the demo listed below in this section.
 
 {@snippet features/word-count-update}
 
@@ -135,7 +142,7 @@ BalloonEditor
 			}
 		}
 	} )
-	.catch( ... );
+	.catch( /* ... */ );
 ```
 
 Here is the HTML structure used to create the customized word and character count implementation above:
@@ -225,6 +232,10 @@ Here is the HTML structure used to create the customized word and character coun
 
 ## Installation
 
+<info-box info>
+	The Word count feature is enabled by default in the {@link installation/getting-started/predefined-builds#superbuild superbuild} only.
+</info-box>
+
 To add this feature to your rich-text editor, install the [`@ckeditor/ckeditor5-word-count`](https://www.npmjs.com/package/@ckeditor/ckeditor5-word-count) package:
 
 ```bash
@@ -234,25 +245,35 @@ npm install --save @ckeditor/ckeditor5-word-count
 And add it to your plugin list configuration:
 
 ```js
-import WordCount from '@ckeditor/ckeditor5-word-count/src/wordcount';
+import { WordCount } from '@ckeditor/ckeditor5-word-count';
 
 ClassicEditor
 	.create( document.querySelector( '#editor' ), {
-		plugins: [ WordCount, ... ],
+		plugins: [ WordCount, /* ... */ ],
 	} )
-	.then( ... )
-	.catch( ... );
+	.then( /* ... */ )
+	.catch( /* ... */ );
 ```
 
 <info-box info>
-	Read more about {@link builds/guides/integration/installing-plugins installing plugins}.
+	Read more about {@link installation/plugins/installing-plugins installing plugins}.
 </info-box>
+
+
+## Related features
+
+CKEditor&nbsp;5 provides other productivity-boosting features that you may find helpful:
+
+* {@link features/spelling-and-grammar-checking Proofreading, spelling and grammar checking} &ndash; Track and correct any possible errors as you type.
+* {@link features/autosave Autosave} &ndash; Never lose your content by accident, stay safe and automatically save.
+* {@link features/autoformat Autoformatting} &ndash; Employ Markdown syntax for a faster and more efficient editing process.
+* {@link features/text-transformation Automatic text transformation} &ndash; Automatically turn predefined snippets into their improved forms using the autocorrect feature.
 
 ## Common API
 
 The {@link module:word-count/wordcount~WordCount} plugin provides:
 
-* The {@link module:word-count/wordcount~WordCount#wordCountContainer} property. It returns a self-updating HTML element which is updated with the current number of words and characters in the editor. You can remove the "Words" or "Characters" counters with a proper configuration of the {@link module:word-count/wordcount~WordCountConfig#displayWords `config.wordCount.displayWords`} and {@link module:word-count/wordcount~WordCountConfig#displayCharacters `config.wordCount.displayCharacters`} options.
+* The {@link module:word-count/wordcount~WordCount#wordCountContainer} property. It returns a self-updating HTML element which is updated with the current number of words and characters in the editor. You can remove the "Words" or "Characters" counters with a proper configuration of the {@link module:word-count/wordcountconfig~WordCountConfig#displayWords `config.wordCount.displayWords`} and {@link module:word-count/wordcountconfig~WordCountConfig#displayCharacters `config.wordCount.displayCharacters`} options.
 * The {@link module:word-count/wordcount~WordCount#event:update `update` event}, fired whenever the plugins update the number of counted words and characters. You can use it to run a custom callback function with updated values:
 
 	```js
@@ -268,9 +289,9 @@ The {@link module:word-count/wordcount~WordCount} plugin provides:
 * The {@link module:word-count/wordcount~WordCount#characters} and {@link module:word-count/wordcount~WordCount#words} properties from which you can retrieve the stats at any moment.
 
 <info-box>
-	We recommend using the official {@link framework/guides/development-tools#ckeditor-5-inspector CKEditor 5 inspector} for development and debugging. It will give you tons of useful information about the state of the editor such as internal data structures, selection, commands, and many more.
+	We recommend using the official {@link framework/development-tools/inspector CKEditor&nbsp;5 inspector} for development and debugging. It will give you tons of useful information about the state of the editor such as internal data structures, selection, commands, and many more.
 </info-box>
 
 ## Contribute
 
-The source code of the feature is available on GitHub in https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-word-count.
+The source code of the feature is available on GitHub at [https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-word-count](https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-word-count).

@@ -1,17 +1,20 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 /* globals document, console */
 
+import BalloonEditor from '../src/ballooneditor';
 import BalloonEditorUI from '../src/ballooneditorui';
 import BalloonEditorUIView from '../src/ballooneditoruiview';
 
 import HtmlDataProcessor from '@ckeditor/ckeditor5-engine/src/dataprocessor/htmldataprocessor';
 
-import BalloonEditor from '../src/ballooneditor';
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
+import Context from '@ckeditor/ckeditor5-core/src/context';
+import EditorWatchdog from '@ckeditor/ckeditor5-watchdog/src/editorwatchdog';
+import ContextWatchdog from '@ckeditor/ckeditor5-watchdog/src/contextwatchdog';
 import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
 import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
 import BalloonToolbar from '@ckeditor/ckeditor5-ui/src/toolbar/balloon/balloontoolbar';
@@ -24,7 +27,7 @@ import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 import ArticlePluginSet from '@ckeditor/ckeditor5-core/tests/_utils/articlepluginset';
 import { describeMemoryUsage, testMemoryUsage } from '@ckeditor/ckeditor5-core/tests/_utils/memory';
 import { assertCKEditorError } from '@ckeditor/ckeditor5-utils/tests/_utils/utils';
-import { removeEditorBodyOrphans } from '@ckeditor/ckeditor5-core/tests/_utils/cleanup';
+import CKEditorError from '@ckeditor/ckeditor5-utils/src/ckeditorerror';
 
 describe( 'BalloonEditor', () => {
 	let editor, editorElement;
@@ -96,13 +99,44 @@ describe( 'BalloonEditor', () => {
 						expect.fail( 'Balloon editor should not initialize on an element already used by other instance.' );
 					},
 					err => {
-						assertCKEditorError( err,
-							/^editor-source-element-already-used/
-						);
+						assertCKEditorError( err, 'editor-source-element-already-used' );
 					}
 				)
 				.then( done )
 				.catch( done );
+		} );
+
+		describe( 'config.initialData', () => {
+			it( 'if not set, is set using DOM element data', () => {
+				const editorElement = document.createElement( 'div' );
+				editorElement.innerHTML = '<p>Foo</p>';
+
+				const editor = new BalloonEditor( editorElement );
+
+				expect( editor.config.get( 'initialData' ) ).to.equal( '<p>Foo</p>' );
+			} );
+
+			it( 'if not set, is set using data passed in constructor', () => {
+				const editor = new BalloonEditor( '<p>Foo</p>' );
+
+				expect( editor.config.get( 'initialData' ) ).to.equal( '<p>Foo</p>' );
+			} );
+
+			it( 'if set, is not overwritten with DOM element data', () => {
+				const editorElement = document.createElement( 'div' );
+				editorElement.innerHTML = '<p>Foo</p>';
+
+				const editor = new BalloonEditor( editorElement, { initialData: '<p>Bar</p>' } );
+
+				expect( editor.config.get( 'initialData' ) ).to.equal( '<p>Bar</p>' );
+			} );
+
+			it( 'it should throw if config.initialData is set and initial data is passed in constructor', () => {
+				expect( () => {
+					// eslint-disable-next-line no-new
+					new BalloonEditor( '<p>Foo</p>', { initialData: '<p>Bar</p>' } );
+				} ).to.throw( CKEditorError, 'editor-create-initial-data' );
+			} );
 		} );
 	} );
 
@@ -189,28 +223,21 @@ describe( 'BalloonEditor', () => {
 			} );
 		} );
 
-		it( 'throws if initial data is passed in Editor#create and config.initialData is also used', done => {
-			BalloonEditor.create( '<p>Hello world!</p>', {
-				initialData: '<p>I am evil!</p>',
+		// https://github.com/ckeditor/ckeditor5/issues/8974
+		it( 'initializes with empty content if config.initialData is set to an empty string', () => {
+			const editorElement = document.createElement( 'div' );
+			editorElement.innerHTML = '<p><strong>foo</strong> bar</p>';
+
+			return BalloonEditor.create( editorElement, {
+				initialData: '',
 				plugins: [ Paragraph ]
-			} )
-				.then(
-					() => {
-						expect.fail( 'Balloon editor should throw an error when both initial data are passed' );
-					},
-					err => {
-						assertCKEditorError( err,
-							// eslint-disable-next-line max-len
-							/^editor-create-initial-data: The config\.initialData option cannot be used together with initial data passed in Editor\.create\(\)\./,
-							null
-						);
-					}
-				)
-				.then( () => {
-					removeEditorBodyOrphans();
-				} )
-				.then( done )
-				.catch( done );
+			} ).then( editor => {
+				expect( editor.getData() ).to.equal( '' );
+
+				return editor.destroy();
+			} ).then( () => {
+				editorElement.remove();
+			} );
 		} );
 
 		// ckeditor/ckeditor5-editor-classic#53
@@ -247,10 +274,7 @@ describe( 'BalloonEditor', () => {
 						expect.fail( 'Balloon editor should throw an error when is initialized in textarea.' );
 					},
 					err => {
-						assertCKEditorError( err,
-							/^editor-wrong-element: This type of editor cannot be initialized inside <textarea> element\./,
-							null
-						);
+						assertCKEditorError( err, 'editor-wrong-element', null );
 					}
 				)
 				.then( done )
@@ -322,9 +346,10 @@ describe( 'BalloonEditor', () => {
 
 					const schema = editor.model.schema;
 
-					schema.register( 'heading' );
-					schema.extend( 'heading', { allowIn: '$root' } );
-					schema.extend( '$text', { allowIn: 'heading' } );
+					schema.register( 'heading', {
+						allowIn: '$root',
+						allowChildren: '$text'
+					} );
 
 					editor.conversion.for( 'upcast' ).elementToElement( { model: 'heading', view: 'heading' } );
 					editor.conversion.for( 'dataDowncast' ).elementToElement( { model: 'heading', view: 'heading' } );
@@ -335,7 +360,21 @@ describe( 'BalloonEditor', () => {
 				} );
 		} );
 
+		// We don't update the source element by default, so after destroy, it should contain the data
+		// from the editing pipeline.
+		it( 'don\'t set the data back to the editor element', () => {
+			editor.setData( '<p>a</p><heading>b</heading>' );
+
+			return editor.destroy()
+				.then( () => {
+					expect( editorElement.innerHTML ).to.equal( '' );
+				} );
+		} );
+
+		// Adding `updateSourceElementOnDestroy` config to the editor allows setting the data
+		// back to the source element after destroy.
 		it( 'sets the data back to the editor element', () => {
+			editor.config.set( 'updateSourceElementOnDestroy', true );
 			editor.setData( '<p>a</p><heading>b</heading>' );
 
 			return editor.destroy()
@@ -356,6 +395,20 @@ describe( 'BalloonEditor', () => {
 		} );
 	} );
 
+	describe( 'static fields', () => {
+		it( 'BalloonEditor.Context', () => {
+			expect( BalloonEditor.Context ).to.equal( Context );
+		} );
+
+		it( 'BalloonEditor.EditorWatchdog', () => {
+			expect( BalloonEditor.EditorWatchdog ).to.equal( EditorWatchdog );
+		} );
+
+		it( 'BalloonEditor.ContextWatchdog', () => {
+			expect( BalloonEditor.ContextWatchdog ).to.equal( ContextWatchdog );
+		} );
+	} );
+
 	describeMemoryUsage( () => {
 		testMemoryUsage(
 			'should not grow on multiple create/destroy',
@@ -364,7 +417,7 @@ describe( 'BalloonEditor', () => {
 					plugins: [ ArticlePluginSet ],
 					toolbar: [ 'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote' ],
 					image: {
-						toolbar: [ 'imageStyle:full', 'imageStyle:side', '|', 'imageTextAlternative' ]
+						toolbar: [ 'imageStyle:block', 'imageStyle:side', '|', 'imageTextAlternative' ]
 					}
 				} ) );
 	} );

@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -52,6 +52,13 @@ describe( 'MediaEmbedToolbar', () => {
 
 	describe( 'toolbar', () => {
 		it( 'should use the config.table.tableWidget to create items', () => {
+			// Make sure that toolbar is empty before first show.
+			expect( toolbar.items.length ).to.equal( 0 );
+
+			editor.ui.focusTracker.isFocused = true;
+
+			setData( model, '[<media url=""></media>]' );
+
 			expect( toolbar.items ).to.have.length( 1 );
 			expect( toolbar.items.get( 0 ).label ).to.equal( 'fake button' );
 		} );
@@ -63,10 +70,9 @@ describe( 'MediaEmbedToolbar', () => {
 
 			setData( model, '[<media url=""></media>]' );
 
-			sinon.assert.calledWithMatch( spy, {
-				view: toolbar,
-				balloonClassName: 'ck-toolbar-container'
-			} );
+			sinon.assert.calledWithMatch( spy, sinon.match( ( { balloonClassName, view } ) => {
+				return view === toolbar && balloonClassName === 'ck-toolbar-container';
+			} ) );
 		} );
 
 		it( 'should set aria-label attribute', () => {
@@ -251,7 +257,7 @@ describe( 'MediaEmbedToolbar - integration with BalloonEditor', () => {
 
 			expect( widgetToolbarRepository._toolbarDefinitions.get( 'mediaEmbed' ) ).to.be.undefined;
 			expect( consoleWarnStub.calledOnce ).to.equal( true );
-			expect( consoleWarnStub.firstCall.args[ 0 ] ).to.match( /^widget-toolbar-no-items:/ );
+			expect( consoleWarnStub.firstCall.args[ 0 ] ).to.match( /^widget-toolbar-no-items/ );
 
 			element.remove();
 			return editor.destroy();

@@ -2,11 +2,11 @@
 category: api-reference
 ---
 
-# CKEditor 5 Paste from Office feature
+# CKEditor&nbsp;5 Paste from Office feature
 
 [![npm version](https://badge.fury.io/js/%40ckeditor%2Fckeditor5-paste-from-office.svg)](https://www.npmjs.com/package/@ckeditor/ckeditor5-paste-from-office)
 
-This package implements Paste from Office feature for CKEditor 5.
+This package implements Paste from Office feature for CKEditor&nbsp;5.
 
 ## Documentation
 
@@ -20,7 +20,7 @@ npm install --save @ckeditor/ckeditor5-paste-from-office
 
 ## Contribute
 
-The source code of this package is available on GitHub in https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-paste-from-office.
+The source code of this package is available on GitHub in [https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-paste-from-office](https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-paste-from-office).
 
 ## External links
 

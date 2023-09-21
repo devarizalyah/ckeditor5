@@ -1,20 +1,36 @@
 {
   "name": "@ckeditor/ckeditor5-markdown-gfm",
-  "version": "21.0.0",
+  "version": "39.0.2",
   "description": "GitHub Flavored Markdown data processor for CKEditor 5.",
   "keywords": [
     "ckeditor",
     "ckeditor5",
     "ckeditor 5",
     "ckeditor5-feature",
-    "ckeditor5-plugin"
+    "ckeditor5-plugin",
+    "ckeditor5-dll"
   ],
+  "main": "src/index.ts",
   "dependencies": {
-    "@ckeditor/ckeditor5-engine": "^21.0.0"
+    "ckeditor5": "39.0.2",
+    "marked": "4.0.12",
+    "turndown": "6.0.0",
+    "turndown-plugin-gfm": "1.0.2"
   },
-  "engines": {
-    "node": ">=12.0.0",
-    "npm": ">=5.7.1"
+  "devDependencies": {
+    "@ckeditor/ckeditor5-basic-styles": "39.0.2",
+    "@ckeditor/ckeditor5-code-block": "39.0.2",
+    "@ckeditor/ckeditor5-core": "39.0.2",
+    "@ckeditor/ckeditor5-dev-utils": "^38.0.0",
+    "@ckeditor/ckeditor5-editor-classic": "39.0.2",
+    "@ckeditor/ckeditor5-engine": "39.0.2",
+    "@ckeditor/ckeditor5-list": "39.0.2",
+    "@ckeditor/ckeditor5-table": "39.0.2",
+    "@ckeditor/ckeditor5-theme-lark": "39.0.2",
+    "@types/marked": "^4.0.8",
+    "typescript": "^4.8.4",
+    "webpack": "^5.58.1",
+    "webpack-cli": "^4.9.0"
   },
   "author": "CKSource (http://cksource.com/)",
   "license": "GPL-2.0-or-later",
@@ -27,13 +43,21 @@
   },
   "files": [
     "lang",
-    "src",
-    "theme"
+    "src/**/*.js",
+    "src/**/*.d.ts",
+    "theme",
+    "build",
+    "ckeditor5-metadata.json",
+    "CHANGELOG.md"
   ],
   "depcheckIgnore": [
     "collapse-whitespace",
     "jsdom",
     "void-elements",
     "block-elements"
-  ]
+  ],
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json",
+    "dll:build": "webpack"
+  }
 }

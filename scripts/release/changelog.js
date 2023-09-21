@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -9,31 +9,21 @@
 
 'use strict';
 
-const devEnv = require( '@ckeditor/ckeditor5-dev-env' );
+const fs = require( 'fs' );
+const getChangelogOptions = require( './getchangelogoptions' );
+const { generateChangelogForMonoRepository } = require( '@ckeditor/ckeditor5-dev-release-tools' );
+const { CKEDITOR5_COMMERCIAL_PATH } = require( './utils/constants' );
+const parseArguments = require( './utils/parsearguments' );
 
-Promise.resolve()
-	.then( () => devEnv.generateChangelogForMonoRepository( {
-		cwd: process.cwd(),
-		packages: 'packages',
-		releaseBranch: 'release',
-		highlightsPlaceholder: true,
-		collaborationFeatures: true,
-		transformScope: name => {
-			if ( name === 'ckeditor5' ) {
-				return 'https://www.npmjs.com/package/ckeditor5';
-			}
+const cliArguments = parseArguments( process.argv.slice( 2 ) );
 
-			if ( name === 'build-*' ) {
-				return 'https://www.npmjs.com/search?q=keywords%3Ackeditor5-build%20maintainer%3Ackeditor';
-			}
+if ( !fs.existsSync( CKEDITOR5_COMMERCIAL_PATH ) ) {
+	throw new Error( `The script assumes that the directory "${ CKEDITOR5_COMMERCIAL_PATH }" exists.` );
+}
 
-			if ( name === 'cloud-services-core' ) {
-				return 'https://www.npmjs.com/package/@ckeditor/ckeditor-cloud-services-core';
-			}
+const changelogOptions = getChangelogOptions( cliArguments );
 
-			return 'https://www.npmjs.com/package/@ckeditor/ckeditor5-' + name;
-		}
-	} ) )
+generateChangelogForMonoRepository( changelogOptions )
 	.then( () => {
 		console.log( 'Done!' );
 	} )

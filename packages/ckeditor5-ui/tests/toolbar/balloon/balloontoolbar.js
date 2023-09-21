@@ -1,9 +1,10 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 import ClassicTestEditor from '@ckeditor/ckeditor5-core/tests/_utils/classictesteditor';
+import EditorUI from '../../../src/editorui/editorui';
 import BalloonToolbar from '../../../src/toolbar/balloon/balloontoolbar';
 import ContextualBalloon from '../../../src/panel/balloon/contextualballoon';
 import BalloonPanelView from '../../../src/panel/balloon/balloonpanelview';
@@ -13,10 +14,12 @@ import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
 import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
 import Italic from '@ckeditor/ckeditor5-basic-styles/src/italic';
 import Underline from '@ckeditor/ckeditor5-basic-styles/src/underline';
-import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
+import { Paragraph } from '@ckeditor/ckeditor5-paragraph';
 import HorizontalLine from '@ckeditor/ckeditor5-horizontal-line/src/horizontalline';
+import TableEditing from '@ckeditor/ckeditor5-table/src/tableediting';
 import global from '@ckeditor/ckeditor5-utils/src/dom/global';
 import ResizeObserver from '@ckeditor/ckeditor5-utils/src/dom/resizeobserver';
+import env from '@ckeditor/ckeditor5-utils/src/env';
 
 import { setData } from '@ckeditor/ckeditor5-engine/src/dev-utils/model';
 import { stringify as viewStringify } from '@ckeditor/ckeditor5-engine/src/dev-utils/view';
@@ -32,7 +35,7 @@ import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 
 describe( 'BalloonToolbar', () => {
 	let editor, model, selection, editingView, balloonToolbar, balloon, editorElement;
-	let resizeCallback;
+	let resizeCallback, addToolbarSpy;
 
 	testUtils.createSinonSandbox();
 
@@ -54,9 +57,11 @@ describe( 'BalloonToolbar', () => {
 			};
 		} );
 
+		addToolbarSpy = sinon.spy( EditorUI.prototype, 'addToolbar' );
+
 		return ClassicTestEditor
 			.create( editorElement, {
-				plugins: [ Paragraph, Bold, Italic, BalloonToolbar, HorizontalLine ],
+				plugins: [ Paragraph, Bold, Italic, BalloonToolbar, HorizontalLine, TableEditing ],
 				balloonToolbar: [ 'bold', 'italic' ]
 			} )
 			.then( newEditor => {
@@ -83,10 +88,16 @@ describe( 'BalloonToolbar', () => {
 	} );
 
 	afterEach( () => {
-		sinon.restore();
 		editorElement.remove();
 
 		return editor.destroy();
+	} );
+
+	after( () => {
+		// Clean up after the ResizeObserver stub in beforeEach(). Even though the global.window.ResizeObserver
+		// stub is restored, the ResizeObserver class (CKE5 module) keeps the reference to the single native
+		// observer. Resetting it will allow fresh start for any other test using ResizeObserver.
+		ResizeObserver._observerInstance = null;
 	} );
 
 	it( 'should create a plugin instance', () => {
@@ -176,6 +187,33 @@ describe( 'BalloonToolbar', () => {
 		clock.tick( 110 );
 		// And here it is.
 		sinon.assert.calledOnce( spy );
+	} );
+
+	it( 'should have the isFloating option set to true', () => {
+		expect( balloonToolbar.toolbarView.options.isFloating ).to.be.true;
+	} );
+
+	it( 'should have the accessible label', () => {
+		expect( balloonToolbar.toolbarView.ariaLabel ).to.equal( 'Editor contextual toolbar' );
+	} );
+
+	it( 'should register its toolbar as focusable toolbar in EditorUI with proper configuration responsible for presentation', () => {
+		const showPanelSpy = sinon.spy( balloonToolbar, 'show' );
+		const hidePanelSpy = sinon.spy( balloonToolbar, 'hide' );
+
+		sinon.assert.calledWithExactly( addToolbarSpy.lastCall, balloonToolbar.toolbarView, sinon.match( {
+			beforeFocus: sinon.match.func,
+			afterBlur: sinon.match.func,
+			isContextual: true
+		} ) );
+
+		addToolbarSpy.lastCall.args[ 1 ].beforeFocus();
+
+		sinon.assert.calledOnceWithExactly( showPanelSpy, true );
+
+		addToolbarSpy.lastCall.args[ 1 ].afterBlur();
+
+		sinon.assert.calledOnce( hidePanelSpy );
 	} );
 
 	describe( 'pluginName', () => {
@@ -360,6 +398,18 @@ describe( 'BalloonToolbar', () => {
 			sinon.assert.calledOnce( spy );
 		} );
 
+		it( 'should update the balloon position whenever #toolbarView fires the #groupedItemsUpdate (it changed its geometry)', () => {
+			setData( model, '<paragraph>b[a]r</paragraph>' );
+
+			const spy = sinon.spy( balloon, 'updatePosition' );
+
+			balloonToolbar.show();
+			sinon.assert.notCalled( spy );
+
+			balloonToolbar.toolbarView.fire( 'groupedItemsUpdate' );
+			sinon.assert.calledOnce( spy );
+		} );
+
 		it( 'should not add #toolbarView to the #_balloon more than once', () => {
 			setData( model, '<paragraph>b[a]r</paragraph>' );
 
@@ -375,10 +425,30 @@ describe( 'BalloonToolbar', () => {
 			sinon.assert.notCalled( balloonAddSpy );
 		} );
 
+		it( 'should display the toolbar for a focused selection when called with an argument', () => {
+			setData( model, '<paragraph>b[]ar</paragraph>' );
+
+			balloonToolbar.show( true );
+			sinon.assert.calledOnce( balloonAddSpy );
+		} );
+
 		// https://github.com/ckeditor/ckeditor5/issues/6443
 		it( 'should not add the #toolbarView to the #_balloon when the selection contains more than one fully contained object', () => {
-			// This is for multi cell selection in tables.
 			setData( model, '[<horizontalLine></horizontalLine>]<paragraph>foo</paragraph>[<horizontalLine></horizontalLine>]' );
+
+			balloonToolbar.show();
+			sinon.assert.notCalled( balloonAddSpy );
+		} );
+
+		// https://github.com/ckeditor/ckeditor5/issues/6432
+		it( 'should not add the #toolbarView to the #_balloon when the selection contains more than one fully contained selectable', () => {
+			// This is for multi cell selection in tables.
+			setData( model, '<table>' +
+				'<tableRow>' +
+					'[<tableCell><paragraph>foo</paragraph></tableCell>]' +
+					'[<tableCell><paragraph>bar</paragraph></tableCell>]' +
+				'</tableRow>' +
+			'</table>' );
 
 			balloonToolbar.show();
 			sinon.assert.notCalled( balloonAddSpy );
@@ -424,6 +494,92 @@ describe( 'BalloonToolbar', () => {
 			const expectedWidth = toPx( new Rect( viewElement ).width * 0.9 );
 
 			expect( balloonToolbar.toolbarView.maxWidth ).to.equal( expectedWidth );
+		} );
+
+		// https://github.com/ckeditor/ckeditor5/issues/7707
+		describe( 'on iOS (avoiding the clash with native selection handles)', () => {
+			let targetRect, balloonRect;
+
+			beforeEach( () => {
+				targetRect = new Rect( {
+					top: 200,
+					bottom: 400,
+					left: 50,
+					right: 100,
+					width: 0,
+					height: 0
+				} );
+
+				balloonRect = new Rect( {
+					top: 0,
+					bottom: 0,
+					left: 0,
+					right: 0,
+					width: 50,
+					height: 50
+				} );
+			} );
+
+			it( 'should attach the balloon farther away', () => {
+				setData( model, '<paragraph>b[a]r</paragraph>' );
+
+				balloonToolbar.show();
+
+				const defaultPositioningFunctions = balloonAddSpy.firstCall.args[ 0 ].position.positions;
+
+				balloonToolbar.hide();
+
+				testUtils.sinon.stub( env, 'isSafari' ).get( () => true );
+				testUtils.sinon.stub( env, 'isiOS' ).get( () => true );
+				balloonToolbar.show();
+
+				const iOSPositioningFuctions = balloonAddSpy.secondCall.args[ 0 ].position.positions;
+
+				defaultPositioningFunctions.forEach( ( defaultPositioningFunction, index ) => {
+					const defaultResult = defaultPositioningFunction( targetRect, balloonRect );
+					const iOSResult = iOSPositioningFuctions[ index ]( targetRect, balloonRect );
+
+					// Default non-iOS offset is 10px. On iOS it is 20px/1, which is 20px. The difference is 10px.
+					if ( defaultResult.name.match( /^arrow_n/ ) ) {
+						defaultResult.top += 10;
+					} else if ( defaultResult.name.match( /^arrow_s/ ) ) {
+						defaultResult.top -= 10;
+					}
+
+					expect( iOSResult ).to.deep.equal( defaultResult, index );
+				} );
+			} );
+
+			it( 'should change the distance depending on the scale of the visual viewport', () => {
+				setData( model, '<paragraph>b[a]r</paragraph>' );
+
+				balloonToolbar.show();
+
+				const defaultPositioningFunctions = balloonAddSpy.firstCall.args[ 0 ].position.positions;
+
+				balloonToolbar.hide();
+
+				testUtils.sinon.stub( global.window.visualViewport, 'scale' ).get( () => 0.5 );
+				testUtils.sinon.stub( env, 'isSafari' ).get( () => true );
+				testUtils.sinon.stub( env, 'isiOS' ).get( () => true );
+				balloonToolbar.show();
+
+				const iOSPositioningFuctions = balloonAddSpy.secondCall.args[ 0 ].position.positions;
+
+				defaultPositioningFunctions.forEach( ( defaultPositioningFunction, index ) => {
+					const defaultResult = defaultPositioningFunction( targetRect, balloonRect );
+					const iOSResult = iOSPositioningFuctions[ index ]( targetRect, balloonRect );
+
+					// Default non-iOS offset is 10px. On iOS it is 20px/0.5, which is 40px. The difference is 30px.
+					if ( defaultResult.name.match( /^arrow_n/ ) ) {
+						defaultResult.top += 30;
+					} else if ( defaultResult.name.match( /^arrow_s/ ) ) {
+						defaultResult.top -= 30;
+					}
+
+					expect( iOSResult ).to.deep.equal( defaultResult, index );
+				} );
+			} );
 		} );
 	} );
 

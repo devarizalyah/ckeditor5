@@ -2,19 +2,19 @@
 category: api-reference
 ---
 
-# CKEditor 5 link feature
+# CKEditor&nbsp;5 link feature
 
 [![npm version](https://badge.fury.io/js/%40ckeditor%2Fckeditor5-link.svg)](https://www.npmjs.com/package/@ckeditor/ckeditor5-link)
 
-This package implements the link feature for CKEditor 5. It allows for inserting hyperlinks into the edited content and offers the UI to create and edit them.
+This package implements the link feature for CKEditor&nbsp;5. It allows for inserting hyperlinks into the edited content and offers the UI to create and edit them.
 
 ## Demo
 
-Check out the demo in the {@link features/link Link feature} guide.
+Check out the demo in the {@link features/link link feature guide}.
 
 ## Documentation
 
-See the {@link features/link Link feature} guide and the {@link module:link/link~Link} plugin documentation.
+See the {@link features/link link feature guide} and the {@link module:link/link~Link} plugin documentation.
 
 ## Installation
 
@@ -24,7 +24,7 @@ npm install --save @ckeditor/ckeditor5-link
 
 ## Contribute
 
-The source code of this package is available on GitHub in https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-link.
+The source code of this package is available on GitHub in [https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-link](https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-link).
 
 ## External links
 

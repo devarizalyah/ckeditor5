@@ -1,6 +1,6 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
- * For licensing, see LICENSE.md.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
+ * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 /* globals ClassicEditor, console, window, document */
@@ -24,7 +24,7 @@ function ConvertDivAttributes( editor ) {
 	// View-to-model converter converting a view <div> with all its attributes to the model.
 	editor.conversion.for( 'upcast' ).elementToElement( {
 		view: 'div',
-		model: ( viewElement, modelWriter ) => {
+		model: ( viewElement, { writer: modelWriter } ) => {
 			return modelWriter.createElement( 'div', viewElement.getAttributes() );
 		}
 	} );
@@ -62,8 +62,10 @@ ClassicEditor
 	.create( document.querySelector( '#snippet-div-attributes' ), {
 		cloudServices: CS_CONFIG,
 		extraPlugins: [ ConvertDivAttributes ],
-		toolbar: {
-			viewportTopOffset: window.getViewportTopOffsetConfig()
+		ui: {
+			viewportOffset: {
+				top: window.getViewportTopOffsetConfig()
+			}
 		}
 	} )
 	.then( editor => {

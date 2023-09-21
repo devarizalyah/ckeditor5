@@ -1,67 +1,62 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
-import Clipboard from '@ckeditor/ckeditor5-clipboard/src/clipboard';
+import ClipboardPipeline from '@ckeditor/ckeditor5-clipboard/src/clipboardpipeline';
 import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
 import PasteFromOffice from '../../src/pastefromoffice';
 
 import { generateTests } from '../_utils/utils';
+import * as fixtures from '../_utils/fixtures';
 
 const browsers = [ 'chrome', 'firefox', 'safari', 'edge' ];
 
 const editorConfig = {
-	plugins: [ Clipboard, PasteFromOffice, Paragraph ]
+	plugins: [ ClipboardPipeline, PasteFromOffice, Paragraph ]
 };
 
 describe( 'PasteFromOffice - normalization', () => {
-	generateTests( {
-		input: 'basic-styles',
-		type: 'normalization',
-		browsers,
-		editorConfig
+	generateNormalizationTests( {
+		input: 'basic-styles'
 	} );
 
-	generateTests( {
-		input: 'image',
-		type: 'normalization',
-		browsers,
-		editorConfig
+	generateNormalizationTests( {
+		input: 'image'
 	} );
 
-	generateTests( {
-		input: 'link',
-		type: 'normalization',
-		browsers,
-		editorConfig
+	generateNormalizationTests( {
+		input: 'link'
 	} );
 
-	generateTests( {
-		input: 'list',
-		type: 'normalization',
-		browsers,
-		editorConfig
+	generateNormalizationTests( {
+		input: 'list'
 	} );
 
-	generateTests( {
-		input: 'spacing',
-		type: 'normalization',
-		browsers,
-		editorConfig
+	generateNormalizationTests( {
+		input: 'spacing'
 	} );
 
-	generateTests( {
-		input: 'google-docs-bold-wrapper',
-		type: 'normalization',
-		browsers,
-		editorConfig
+	generateNormalizationTests( {
+		input: 'google-docs-bold-wrapper'
 	} );
 
-	generateTests( {
-		input: 'generic-list-in-table',
-		type: 'normalization',
-		browsers,
-		editorConfig
+	generateNormalizationTests( {
+		input: 'generic-list-in-table'
 	} );
+
+	generateNormalizationTests( {
+		input: 'google-docs-br-paragraphs'
+	} );
+
+	function generateNormalizationTests( config ) {
+		const commonIntegrationConfig = {
+			type: 'normalization',
+			fixtures,
+			editorConfig,
+			browsers
+		};
+
+		return generateTests( Object.assign( {}, config, commonIntegrationConfig ) );
+	}
 } );

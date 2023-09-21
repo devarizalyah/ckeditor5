@@ -1,11 +1,12 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 /* globals document */
 
 import ViewElement from '../../../src/view/element';
+import ViewUIElement from '../../../src/view/uielement';
 import ViewDocument from '../../../src/view/document';
 import ViewDocumentSelection from '../../../src/view/documentselection';
 import DomConverter from '../../../src/view/domconverter';
@@ -14,11 +15,14 @@ import { BR_FILLER, INLINE_FILLER, INLINE_FILLER_LENGTH, NBSP_FILLER } from '../
 import { StylesProcessor } from '../../../src/view/stylesmap';
 import { parse, stringify } from '../../../src/dev-utils/view';
 
+import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 import count from '@ckeditor/ckeditor5-utils/src/count';
 import createElement from '@ckeditor/ckeditor5-utils/src/dom/createelement';
 
 describe( 'DomConverter', () => {
 	let converter, viewDocument;
+
+	testUtils.createSinonSandbox();
 
 	before( () => {
 		viewDocument = new ViewDocument( new StylesProcessor() );
@@ -171,10 +175,54 @@ describe( 'DomConverter', () => {
 			expect( converter.domToView( textNode ) ).to.be.null;
 		} );
 
-		it( 'should return null for a comment', () => {
-			const comment = document.createComment( 'abc' );
+		it( 'should create UIElement for comment', () => {
+			const domComment = document.createComment( 'abc' );
 
-			expect( converter.domToView( comment ) ).to.be.null;
+			const viewComment = converter.domToView( domComment );
+
+			expect( viewComment ).to.be.an.instanceof( ViewUIElement );
+			expect( viewComment.name ).to.equal( '$comment' );
+
+			expect( viewComment.getCustomProperty( '$rawContent' ) ).to.equal( 'abc' );
+
+			expect( converter.mapViewToDom( viewComment ) ).to.not.equal( domComment );
+		} );
+
+		it( 'should create UIElement for comment and bind elements', () => {
+			const domComment = document.createComment( 'abc' );
+
+			const viewComment = converter.domToView( domComment, { bind: true } );
+
+			expect( viewComment ).to.be.an.instanceof( ViewUIElement );
+			expect( viewComment.name ).to.equal( '$comment' );
+
+			expect( viewComment.getCustomProperty( '$rawContent' ) ).to.equal( 'abc' );
+
+			expect( converter.mapViewToDom( viewComment ) ).to.equal( domComment );
+		} );
+
+		it( 'should return `null` for a comment when the `skipComments` option is set to `true`', () => {
+			const domComment = document.createComment( 'abc' );
+
+			const viewComment = converter.domToView( domComment, { skipComments: true } );
+
+			expect( viewComment ).to.be.null;
+		} );
+
+		it( 'should set attributes in the same order as in the DOM', () => {
+			const domP = createElement( document, 'p', { 'data-foo': 'a', 'data-bar': 'b' } );
+			const viewP = converter.domToView( domP );
+
+			expect( viewP ).to.be.an.instanceof( ViewElement );
+			expect( viewP.name ).to.equal( 'p' );
+
+			const attributes = Array.from( viewP.getAttributes() );
+
+			expect( attributes.length ).to.equal( 2 );
+			expect( attributes ).to.deep.equal( [
+				[ 'data-foo', 'a' ],
+				[ 'data-bar', 'b' ]
+			] );
 		} );
 
 		describe( 'it should clear whitespaces', () => {
@@ -202,7 +250,7 @@ describe( 'DomConverter', () => {
 						document.createTextNode( 'foo ' )
 					] ),
 					createElement( document, 'p', {}, [
-						document.createTextNode( 'foo ' )
+						document.createTextNode( 'bar ' )
 					] ),
 					document.createTextNode( ' ' )
 				] );
@@ -211,7 +259,7 @@ describe( 'DomConverter', () => {
 
 				expect( viewDiv.childCount ).to.equal( 2 );
 				expect( viewDiv.getChild( 0 ).getChild( 0 ).data ).to.equal( 'foo' );
-				expect( viewDiv.getChild( 1 ).getChild( 0 ).data ).to.equal( 'foo' );
+				expect( viewDiv.getChild( 1 ).getChild( 0 ).data ).to.equal( 'bar' );
 			} );
 
 			it( 'after a block element', () => {
@@ -421,7 +469,7 @@ describe( 'DomConverter', () => {
 				expect( viewDiv.getChild( 0 ).getChild( 0 ).data ).to.equal( 'f o o' );
 			} );
 
-			function test( inputTexts, output ) {
+			function testTexts( inputTexts, output ) {
 				if ( typeof inputTexts == 'string' ) {
 					inputTexts = [ inputTexts ];
 				}
@@ -446,75 +494,75 @@ describe( 'DomConverter', () => {
 			}
 
 			// At the beginning.
-			test( '_x', ' x' );
-			test( '_ x', '  x' );
-			test( '_ _x', '   x' );
-			test( '_ _ x', '    x' );
+			testTexts( '_x', ' x' );
+			testTexts( '_ x', '  x' );
+			testTexts( '_ _x', '   x' );
+			testTexts( '_ _ x', '    x' );
 
 			// At the end.
-			test( 'x_', 'x ' );
-			test( 'x _', 'x  ' );
-			test( 'x __', 'x   ' );
-			test( 'x _ _', 'x    ' );
+			testTexts( 'x_', 'x ' );
+			testTexts( 'x _', 'x  ' );
+			testTexts( 'x __', 'x   ' );
+			testTexts( 'x _ _', 'x    ' );
 
 			// In the middle.
-			test( 'x x', 'x x' );
-			test( 'x _x', 'x  x' );
-			test( 'x _ x', 'x   x' );
-			test( 'x _ _x', 'x    x' );
+			testTexts( 'x x', 'x x' );
+			testTexts( 'x _x', 'x  x' );
+			testTexts( 'x _ x', 'x   x' );
+			testTexts( 'x _ _x', 'x    x' );
 
 			// Complex.
-			test( '_x_', ' x ' );
-			test( '_ x _x _', '  x  x  ' );
-			test( '_ _x x _', '   x x  ' );
-			test( '_ _x x __', '   x x   ' );
-			test( '_ _x _ _x_', '   x    x ' );
-			test( '_', ' ' );
+			testTexts( '_x_', ' x ' );
+			testTexts( '_ x _x _', '  x  x  ' );
+			testTexts( '_ _x x _', '   x x  ' );
+			testTexts( '_ _x x __', '   x x   ' );
+			testTexts( '_ _x _ _x_', '   x    x ' );
+			testTexts( '_', ' ' );
 
 			// With hard &nbsp;
-			test( '_x', ' x' );
-			test( '__x', ' _x' );
-			test( '___x', ' __x' );
-			test( '__ x', ' _ x' );
+			testTexts( '_x', ' x' );
+			testTexts( '__x', ' _x' );
+			testTexts( '___x', ' __x' );
+			testTexts( '__ x', ' _ x' );
 
-			test( 'x_', 'x ' );
-			test( 'x__', 'x_ ' );
-			test( 'x___', 'x__ ' );
+			testTexts( 'x_', 'x ' );
+			testTexts( 'x__', 'x_ ' );
+			testTexts( 'x___', 'x__ ' );
 
-			test( 'x_x', 'x_x' );
-			test( 'x___x', 'x___x' );
-			test( 'x____x', 'x____x' );
-			test( 'x__ x', 'x__ x' );
-			test( 'x___ x', 'x___ x' );
-			test( 'x_ _x', 'x_  x' );
-			test( 'x __x', 'x  _x' );
-			test( 'x _ x', 'x   x' );
-			test( 'x __ _x', 'x  _  x' );
+			testTexts( 'x_x', 'x_x' );
+			testTexts( 'x___x', 'x___x' );
+			testTexts( 'x____x', 'x____x' );
+			testTexts( 'x__ x', 'x__ x' );
+			testTexts( 'x___ x', 'x___ x' );
+			testTexts( 'x_ _x', 'x_  x' );
+			testTexts( 'x __x', 'x  _x' );
+			testTexts( 'x _ x', 'x   x' );
+			testTexts( 'x __ _x', 'x  _  x' );
 
 			// Two text nodes.
-			test( [ 'x', 'y' ], 'xy' );
-			test( [ 'x ', 'y' ], 'x y' );
-			test( [ 'x _', 'y' ], 'x  y' );
-			test( [ 'x __', 'y' ], 'x   y' );
-			test( [ 'x _  _', 'y' ], 'x    y' );
+			testTexts( [ 'x', 'y' ], 'xy' );
+			testTexts( [ 'x ', 'y' ], 'x y' );
+			testTexts( [ 'x _', 'y' ], 'x  y' );
+			testTexts( [ 'x __', 'y' ], 'x   y' );
+			testTexts( [ 'x _  _', 'y' ], 'x    y' );
 
-			test( [ 'x', ' y' ], 'x y' );
-			test( [ 'x_', ' y' ], 'x  y' );
-			test( [ 'x _', ' y' ], 'x   y' );
-			test( [ 'x __', ' y' ], 'x    y' );
-			test( [ 'x _ _', ' y' ], 'x     y' );
+			testTexts( [ 'x', ' y' ], 'x y' );
+			testTexts( [ 'x_', ' y' ], 'x  y' );
+			testTexts( [ 'x _', ' y' ], 'x   y' );
+			testTexts( [ 'x __', ' y' ], 'x    y' );
+			testTexts( [ 'x _ _', ' y' ], 'x     y' );
 
-			test( [ 'x', ' _y' ], 'x  y' );
-			test( [ 'x_', ' _y' ], 'x   y' );
-			test( [ 'x _', ' _y' ], 'x    y' );
-			test( [ 'x __', ' _y' ], 'x     y' );
-			test( [ 'x _ _', ' _y' ], 'x      y' );
+			testTexts( [ 'x', ' _y' ], 'x  y' );
+			testTexts( [ 'x_', ' _y' ], 'x   y' );
+			testTexts( [ 'x _', ' _y' ], 'x    y' );
+			testTexts( [ 'x __', ' _y' ], 'x     y' );
+			testTexts( [ 'x _ _', ' _y' ], 'x      y' );
 
 			// Some tests with hard &nbsp;
-			test( [ 'x', '_y' ], 'x_y' );
-			test( [ 'x_', 'y' ], 'x_y' );
-			test( [ 'x__', ' y' ], 'x_  y' );
-			test( [ 'x_ _', ' y' ], 'x_   y' );
+			testTexts( [ 'x', '_y' ], 'x_y' );
+			testTexts( [ 'x_', 'y' ], 'x_y' );
+			testTexts( [ 'x__', ' y' ], 'x_  y' );
+			testTexts( [ 'x_ _', ' y' ], 'x_   y' );
 
 			it( 'not in preformatted blocks', () => {
 				const domDiv = createElement( document, 'div', {}, [
@@ -841,6 +889,67 @@ describe( 'DomConverter', () => {
 			expect( stringify( viewP, viewPosition ) ).to.equal( '<p>foo[]</p>' );
 		} );
 
+		// https://github.com/ckeditor/ckeditor5/issues/12575.
+		it( 'should convert position between inline filler and br element', () => {
+			const domFiller = document.createTextNode( INLINE_FILLER );
+			const domBr = createElement( document, 'br' );
+			const domP = createElement( document, 'p', null, [ domFiller, domBr ] );
+
+			const viewP = parse( '<p><br/></p>' );
+
+			converter.bindElements( domP, viewP );
+			converter.bindElements( domBr, viewP.getChild( 0 ) );
+
+			const viewPosition = converter.domPositionToView( domP, 1 );
+
+			expect( stringify( viewP, viewPosition ) ).to.equal( '<p>[]<br></br></p>' );
+		} );
+
+		// https://github.com/ckeditor/ckeditor5/issues/12575.
+		it( 'should convert position between inline filler and br element (multiple br elements)', () => {
+			const domFiller = document.createTextNode( INLINE_FILLER );
+			const domBr1 = createElement( document, 'br' );
+			const domBr2 = createElement( document, 'br' );
+			const domP = createElement( document, 'p', null, [ domBr1, domFiller, domBr2 ] );
+
+			const viewP = parse( '<p><br/><br/></p>' );
+
+			converter.bindElements( domP, viewP );
+			converter.bindElements( domBr1, viewP.getChild( 0 ) );
+			converter.bindElements( domBr2, viewP.getChild( 1 ) );
+
+			const viewPosition = converter.domPositionToView( domP, 2 );
+
+			expect( stringify( viewP, viewPosition ) ).to.equal( '<p><br></br>[]<br></br></p>' );
+		} );
+
+		it( 'should convert position after a block filler', () => {
+			const domFiller = BR_FILLER( document ); // eslint-disable-line new-cap
+			const domP = createElement( document, 'p', null, [ domFiller ] );
+
+			const viewP = parse( '<p></p>' );
+
+			converter.bindElements( domP, viewP );
+
+			const viewPosition = converter.domPositionToView( domP, 1 );
+
+			expect( stringify( viewP, viewPosition ) ).to.equal( '<p>[]</p>' );
+		} );
+
+		it( 'should not crash if offset does not exist', () => {
+			const domFiller = document.createTextNode( INLINE_FILLER );
+			const domP = createElement( document, 'p', null, [ domFiller ] );
+
+			const viewP = parse( '<p></p>' );
+
+			converter.bindElements( domP, viewP );
+
+			const viewPosition = converter.domPositionToView( domP, 100 );
+
+			expect( viewPosition ).to.be.null;
+			expect( stringify( viewP ) ).to.equal( '<p></p>' );
+		} );
+
 		it( 'should return null if there is no corresponding parent node', () => {
 			const domText = document.createTextNode( 'foo' );
 			const domP = createElement( document, 'p', null, domText );
@@ -945,7 +1054,72 @@ describe( 'DomConverter', () => {
 			expect( viewSelection.rangeCount ).to.equal( 0 );
 		} );
 
-		it( 'should handle selection direction', () => {
+		it( 'should handle selection direction (forward, same node)', () => {
+			const domFoo = document.createTextNode( 'foo' );
+			const domP = createElement( document, 'p', null, [ domFoo ] );
+
+			const viewP = parse( '<p>foo</p>' );
+
+			converter.bindElements( domP, viewP );
+
+			document.body.appendChild( domP );
+
+			const domRange = document.createRange();
+			domRange.setStart( domFoo, 1 );
+			domRange.collapse( true );
+
+			const domSelection = document.getSelection();
+			domSelection.removeAllRanges();
+			domSelection.addRange( domRange );
+			domSelection.extend( domFoo, 2 );
+
+			const viewSelection = converter.domSelectionToView( domSelection );
+
+			expect( viewSelection.rangeCount ).to.equal( 1 );
+			expect( viewSelection.anchor.offset ).to.equal( 1 );
+			expect( viewSelection.focus.offset ).to.equal( 2 );
+			expect( viewSelection.isBackward ).to.be.false;
+
+			domP.remove();
+		} );
+
+		it( 'should handle selection direction (forward, different node)', () => {
+			const domFoo = document.createTextNode( 'foo' );
+			const domBar = document.createTextNode( 'bar' );
+			const domB = createElement( document, 'b', null, [ domFoo ] );
+			const domI = createElement( document, 'i', null, [ domBar ] );
+			const domP = createElement( document, 'p', null, [ domB, domI ] );
+
+			const viewP = parse( '<p><b>foo</b><i>bar</i></p>' );
+
+			converter.bindElements( domP, viewP );
+			converter.bindElements( domB, viewP.getChild( 0 ) );
+			converter.bindElements( domI, viewP.getChild( 1 ) );
+
+			document.body.appendChild( domP );
+
+			const domRange = document.createRange();
+			domRange.setStart( domFoo, 2 );
+			domRange.collapse( true );
+
+			const domSelection = document.getSelection();
+			domSelection.removeAllRanges();
+			domSelection.addRange( domRange );
+			domSelection.extend( domBar, 1 );
+
+			const viewSelection = converter.domSelectionToView( domSelection );
+
+			expect( viewSelection.rangeCount ).to.equal( 1 );
+			expect( viewSelection.anchor.parent.parent.name ).to.equal( 'b' );
+			expect( viewSelection.anchor.offset ).to.equal( 2 );
+			expect( viewSelection.focus.parent.parent.name ).to.equal( 'i' );
+			expect( viewSelection.focus.offset ).to.equal( 1 );
+			expect( viewSelection.isBackward ).to.be.false;
+
+			domP.remove();
+		} );
+
+		it( 'should handle selection direction (backward, same node)', () => {
 			const domFoo = document.createTextNode( 'foo' );
 			const domP = createElement( document, 'p', null, [ domFoo ] );
 
@@ -970,6 +1144,81 @@ describe( 'DomConverter', () => {
 			expect( viewSelection.anchor.offset ).to.equal( 2 );
 			expect( viewSelection.focus.offset ).to.equal( 1 );
 			expect( viewSelection.isBackward ).to.be.true;
+
+			domP.remove();
+		} );
+
+		it( 'should handle selection direction (backward, different node)', () => {
+			const domFoo = document.createTextNode( 'foo' );
+			const domBar = document.createTextNode( 'bar' );
+			const domB = createElement( document, 'b', null, [ domFoo ] );
+			const domI = createElement( document, 'i', null, [ domBar ] );
+			const domP = createElement( document, 'p', null, [ domB, domI ] );
+
+			const viewP = parse( '<p><b>foo</b><i>bar</i></p>' );
+
+			converter.bindElements( domP, viewP );
+			converter.bindElements( domB, viewP.getChild( 0 ) );
+			converter.bindElements( domI, viewP.getChild( 1 ) );
+
+			document.body.appendChild( domP );
+
+			const domRange = document.createRange();
+			domRange.setStart( domBar, 1 );
+			domRange.collapse( true );
+
+			const domSelection = document.getSelection();
+			domSelection.removeAllRanges();
+			domSelection.addRange( domRange );
+			domSelection.extend( domFoo, 2 );
+
+			const viewSelection = converter.domSelectionToView( domSelection );
+
+			expect( viewSelection.rangeCount ).to.equal( 1 );
+			expect( viewSelection.anchor.parent.parent.name ).to.equal( 'i' );
+			expect( viewSelection.anchor.offset ).to.equal( 1 );
+			expect( viewSelection.focus.parent.parent.name ).to.equal( 'b' );
+			expect( viewSelection.focus.offset ).to.equal( 2 );
+			expect( viewSelection.isBackward ).to.be.true;
+
+			domP.remove();
+		} );
+
+		// https://github.com/ckeditor/ckeditor5/issues/12375
+		// It happens on Safari that current selection doesn't make any sense.
+		it( 'should not throw when selection.focusOffset is greater than the number of elements', () => {
+			const domFoo = document.createTextNode( 'foo' );
+			const domP = createElement( document, 'p', null, [ domFoo ] );
+
+			const viewP = parse( '<p>foo</p>' );
+
+			converter.bindElements( domP, viewP );
+
+			document.body.appendChild( domP );
+
+			const domRange = document.createRange();
+			domRange.setStart( domFoo, 1 );
+			domRange.collapse( true );
+
+			const domSelection = {
+				rangeCount: 1,
+				isCollapsed: false,
+				anchorNode: domFoo,
+				anchorOffset: 1,
+				focusNode: domFoo,
+				focusOffset: 100,
+
+				getRangeAt() { return domRange; }
+			};
+
+			let viewSelection;
+
+			expect( () => {
+				viewSelection = converter.domSelectionToView( domSelection );
+			} ).to.not.throw();
+
+			expect( viewSelection.rangeCount ).to.equal( 1 );
+			expect( viewSelection.isBackward ).to.be.false;
 
 			domP.remove();
 		} );

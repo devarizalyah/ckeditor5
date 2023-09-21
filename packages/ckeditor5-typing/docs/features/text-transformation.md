@@ -1,13 +1,28 @@
 ---
 category: features
 menu-title: Automatic text transformation
+meta-title: Automatic text transformation (autocorrect) | CKEditor 5 Documentation
 ---
 
 # Automatic text transformation (autocorrect)
 
 {@snippet features/build-text-transformation-source}
 
-The {@link module:typing/texttransformation~TextTransformation} feature brings support for implementing autocorrection options, i.e. automatically turning predefined snippets into their improved forms. Here are some examples that will be transformed in your WYSIWYG editor:
+The text transformation feature enables autocorrection. It automatically changes predefined text fragments into their improved forms.
+
+## Demo
+
+Type snippets such as `(c)`, `3/4`, `!=`, `---`, `"foo"` into the editor below and see how they get transformed into their typographically nicer forms. You can see the complete list of predefined transformations in the {@link module:typing/typingconfig~TextTransformationConfig} documentation.
+
+{@snippet features/text-transformation}
+
+<info-box info>
+	This demo only presents a limited set of features. Visit the {@link examples/builds/full-featured-editor feature-rich editor example} to see more in action.
+</info-box>
+
+## Additional feature information
+
+Here are some examples of snippets changed by the text transformation feature:
 
 <table style="width: unset">
 	<thead>
@@ -44,29 +59,17 @@ This feature comes pre-configured with a set of the most popular transformations
 
 While most often this feature is used to easily insert special characters that are not present on your keyboard, it can also be used to achieve other goals. For instance, you can improve the users' productivity by configuring it to expand some abbreviations (e.g. team or company names) into their full forms.
 
-## Demo
-
-Type snippets such as `(c)`, `3/4`, `!=`, `---`, `"foo"` into the rich-text editor below and see how they get transformed into their typographically nicer forms. You can see the complete list of predefined transformations in the {@link module:typing/texttransformation~TextTransformationConfig} documentation.
-
-{@snippet features/text-transformation}
-
-## Related productivity features
-
-In addition to enabling automatic text transformations, you may want to check the following productivity features:
-
-* {@link features/autoformat Autoformatting} &ndash; Allows to quickly apply formatting to the content you are writing.
-* {@link features/link#autolink-feature Autolink} &ndash; Turns the links and email addresses typed or pasted into the editor into active URLs.
-* {@link features/mentions Mentions} &ndash; Brings support for smart autocompletion.
+You may find additional interesting details and usage examples in the [Automatic text transformation in CKEditor&nbsp;5](https://ckeditor.com/blog/feature-of-the-month-automatic-text-transformation-in-ckeditor-5/) blog post after reading this guide.
 
 ## Configuring transformations
 
-This feature comes pre-configured with a set of transformations. You can find the list of them in the {@link module:typing/texttransformation~TextTransformationConfig} documentation.
+This feature comes pre-configured with a set of transformations. You can find the list of them in the {@link module:typing/typingconfig~TextTransformationConfig} documentation.
 
 By using the options defined below you can extend, limit or override this list:
 
-* {@link module:typing/texttransformation~TextTransformationConfig#include `typing.transformations.include`} &ndash; Overrides the default configuration. When overriding the default configuration you can reuse the predefined transformations (by using their names that can be found in the {@link module:typing/texttransformation~TextTransformationConfig} documentation) and write your own transformations.
-* {@link module:typing/texttransformation~TextTransformationConfig#remove `typing.transformations.remove`} &ndash; Removes predefined transformations.
-* {@link module:typing/texttransformation~TextTransformationConfig#extra `typing.transformations.extra`} &ndash; Adds your custom transformations to the predefined ones.
+* {@link module:typing/typingconfig~TextTransformationConfig#include `typing.transformations.include`} &ndash; Overrides the default configuration. When overriding the default configuration you can reuse the predefined transformations (by using their names that can be found in the {@link module:typing/typingconfig~TextTransformationConfig} documentation) and write your own transformations.
+* {@link module:typing/typingconfig~TextTransformationConfig#remove `typing.transformations.remove`} &ndash; Removes predefined transformations.
+* {@link module:typing/typingconfig~TextTransformationConfig#extra `typing.transformations.extra`} &ndash; Adds your custom transformations to the predefined ones.
 
 ### Example: Using `transformations.include`
 
@@ -88,8 +91,8 @@ ClassicEditor
 			}
 		}
 	} )
-	.then( ... )
-	.catch( ... );
+	.then( /* ... */ )
+	.catch( /* ... */ );
 ```
 
 ### Example: Using `transformations.remove` and `extra`
@@ -128,29 +131,29 @@ ClassicEditor
 					},
 
 					// Finally, you can define `to` as a callback.
-					// This (naive) rule will auto-capitalize the first word after a period.
+					// This (naive) rule will auto-capitalize the first word after a period, question mark, or an exclamation mark.
 					{
-						from: /(\. )([a-z])$/,
+						from: /([.?!] )([a-z])$/,
 						to: matches => [ null, matches[ 1 ].toUpperCase() ]
 					}
 				],
 			}
 		}
 	} )
-	.then( ... )
-	.catch( ... );
+	.then( /* ... */ )
+	.catch( /* ... */ );
 ```
 
-You can read more about the format of transformation rules in {@link module:typing/texttransformation~TextTransformationDescription}.
+You can read more about the format of transformation rules in {@link module:typing/typingconfig~TextTransformationDescription}.
 
-You can test the custom rules defined above in the demo:
+You can test the custom rules defined above in the demo. Try typing `:)` or `:+1:` and see how the text gets transformed into emojis. You can also write some sentences to test how the editor capitalizes words after a period, a quotation mark, or an exclamation mark.
 
 {@snippet features/text-transformation-extended}
 
 ## Installation
 
 <info-box info>
-	This feature is enabled by default in all builds. The installation instructions are for developers interested in building their own, custom rich text editor.
+	The text transformation feature is enabled by default in all {@link installation/getting-started/predefined-builds predefined builds}. The installation instructions are for developers interested in building their own, custom rich text editor.
 </info-box>
 
 To add this feature to your rich-text editor, install the [`@ckeditor/ckeditor5-typing`](https://www.npmjs.com/package/@ckeditor/ckeditor5-typing) package:
@@ -162,20 +165,29 @@ npm install --save @ckeditor/ckeditor5-typing
 And add it to your plugin list configuration:
 
 ```js
-import TextTransformation from '@ckeditor/ckeditor5-typing/src/texttransformation';
+import { TextTransformation } from '@ckeditor/ckeditor5-typing';
 
 ClassicEditor
 	.create( document.querySelector( '#editor' ), {
 		plugins: [ TextTransformation, ... ],
 	} )
-	.then( ... )
-	.catch( ... );
+	.then( /* ... */ )
+	.catch( /* ... */ );
 ```
 
 <info-box info>
-	Read more about {@link builds/guides/integration/installing-plugins installing plugins}.
+	Read more about {@link installation/plugins/installing-plugins installing plugins}.
 </info-box>
+
+## Related features
+
+In addition to enabling automatic text transformations, you may want to check the following productivity features:
+
+* {@link features/autoformat Autoformatting} &ndash; Lets you quickly apply formatting to the content you are writing.
+* {@link features/link#autolink-feature Autolink} &ndash; Turns the links and email addresses typed or pasted into the editor into active URLs.
+* {@link features/slash-commands Slash commands} &ndash; Allows to execute a predefined command by writing its name or alias directly in the editor.
+* {@link features/mentions Mentions} &ndash; Brings support for smart autocompletion.
 
 ## Contribute
 
-The source code of the feature is available on GitHub in https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-typing.
+The source code of the feature is available on GitHub at [https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-typing](https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-typing).

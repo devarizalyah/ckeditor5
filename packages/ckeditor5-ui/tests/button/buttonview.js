@@ -1,14 +1,13 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
-/* globals Event */
+/* globals Event, document */
 
 import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 import ButtonView from '../../src/button/buttonview';
 import IconView from '../../src/icon/iconview';
-import TooltipView from '../../src/tooltip/tooltipview';
 import View from '../../src/view';
 import ViewCollection from '../../src/viewcollection';
 import env from '@ckeditor/ckeditor5-utils/src/env';
@@ -32,10 +31,6 @@ describe( 'ButtonView', () => {
 	describe( 'constructor()', () => {
 		it( 'creates view#children collection', () => {
 			expect( view.children ).to.be.instanceOf( ViewCollection );
-		} );
-
-		it( 'creates #tooltipView', () => {
-			expect( view.tooltipView ).to.be.instanceOf( TooltipView );
 		} );
 
 		it( 'creates #labelView', () => {
@@ -134,7 +129,8 @@ describe( 'ButtonView', () => {
 
 		describe( 'tooltip', () => {
 			it( 'is initially set', () => {
-				expect( view.children.getIndex( view.tooltipView ) ).to.equal( 0 );
+				expect( view.element.dataset.ckeTooltipText ).to.be.undefined;
+				expect( view.element.dataset.ckeTooltipPosition ).to.equal( 's' );
 			} );
 
 			it( 'it reacts to #tooltipPosition attribute', () => {
@@ -142,10 +138,10 @@ describe( 'ButtonView', () => {
 				view.icon = '<svg></svg>';
 
 				expect( view.tooltipPosition ).to.equal( 's' );
-				expect( view.tooltipView.position ).to.equal( 's' );
+				expect( view.element.dataset.ckeTooltipPosition ).to.equal( 's' );
 
 				view.tooltipPosition = 'n';
-				expect( view.tooltipView.position ).to.equal( 'n' );
+				expect( view.element.dataset.ckeTooltipPosition ).to.equal( 'n' );
 			} );
 
 			describe( 'defined as a Boolean', () => {
@@ -154,7 +150,7 @@ describe( 'ButtonView', () => {
 					view.label = 'bar';
 					view.keystroke = 'A';
 
-					expect( view.tooltipView.text ).to.equal( 'bar (A)' );
+					expect( view.element.dataset.ckeTooltipText ).to.equal( 'bar (A)' );
 				} );
 
 				it( 'not render tooltip text when #tooltip value is false', () => {
@@ -162,7 +158,7 @@ describe( 'ButtonView', () => {
 					view.label = 'bar';
 					view.keystroke = 'A';
 
-					expect( view.tooltipView.text ).to.equal( '' );
+					expect( view.element.dataset.ckeTooltipText ).to.be.undefined;
 				} );
 
 				it( 'reacts to changes in #label and #keystroke', () => {
@@ -170,12 +166,12 @@ describe( 'ButtonView', () => {
 					view.label = 'foo';
 					view.keystroke = 'B';
 
-					expect( view.tooltipView.text ).to.equal( 'foo (B)' );
+					expect( view.element.dataset.ckeTooltipText ).to.equal( 'foo (B)' );
 
 					view.label = 'baz';
 					view.keystroke = false;
 
-					expect( view.tooltipView.text ).to.equal( 'baz' );
+					expect( view.element.dataset.ckeTooltipText ).to.equal( 'baz' );
 				} );
 			} );
 
@@ -185,16 +181,16 @@ describe( 'ButtonView', () => {
 					view.label = 'foo';
 					view.keystroke = 'A';
 
-					expect( view.tooltipView.text ).to.equal( 'bar' );
+					expect( view.element.dataset.ckeTooltipText ).to.equal( 'bar' );
 				} );
 
 				it( 'reacts to changes of #tooltip', () => {
 					view.tooltip = 'bar';
 
-					expect( view.tooltipView.text ).to.equal( 'bar' );
+					expect( view.element.dataset.ckeTooltipText ).to.equal( 'bar' );
 
 					view.tooltip = 'foo';
-					expect( view.tooltipView.text ).to.equal( 'foo' );
+					expect( view.element.dataset.ckeTooltipText ).to.equal( 'foo' );
 				} );
 			} );
 
@@ -204,7 +200,7 @@ describe( 'ButtonView', () => {
 					view.label = 'foo';
 					view.keystroke = 'A';
 
-					expect( view.tooltipView.text ).to.equal( 'foo - A' );
+					expect( view.element.dataset.ckeTooltipText ).to.equal( 'foo - A' );
 				} );
 
 				it( 'reacts to changes of #label and #keystroke', () => {
@@ -212,13 +208,25 @@ describe( 'ButtonView', () => {
 					view.label = 'foo';
 					view.keystroke = 'A';
 
-					expect( view.tooltipView.text ).to.equal( 'foo - A' );
+					expect( view.element.dataset.ckeTooltipText ).to.equal( 'foo - A' );
 
 					view.label = 'bar';
 					view.keystroke = 'B';
 
-					expect( view.tooltipView.text ).to.equal( 'bar - B' );
+					expect( view.element.dataset.ckeTooltipText ).to.equal( 'bar - B' );
 				} );
+			} );
+		} );
+
+		describe( 'role', () => {
+			it( 'is not initially set ', () => {
+				expect( view.element.attributes.role ).to.equal( undefined );
+			} );
+
+			it( 'reacts on view#role', () => {
+				view.role = 'foo';
+
+				expect( view.element.attributes.role.value ).to.equal( 'foo' );
 			} );
 		} );
 
@@ -253,12 +261,24 @@ describe( 'ButtonView', () => {
 					.to.match( /^ck-editor__aria-label_\w+$/ );
 			} );
 
+			it( '-labelledby reacts to #ariaLabelledBy', () => {
+				view.ariaLabelledBy = 'foo';
+				expect( view.element.attributes[ 'aria-labelledby' ].value )
+					.to.equal( 'foo' );
+			} );
+
 			it( '-disabled reacts to #isEnabled', () => {
 				view.isEnabled = true;
 				expect( view.element.attributes[ 'aria-disabled' ] ).to.be.undefined;
 
 				view.isEnabled = false;
 				expect( view.element.attributes[ 'aria-disabled' ].value ).to.equal( 'true' );
+			} );
+
+			it( '-pressed has correct default value for toggleable button', () => {
+				view.isToggleable = true;
+				view.isOn = undefined;
+				expect( view.element.attributes[ 'aria-pressed' ].value ).to.equal( 'false' );
 			} );
 
 			it( '-pressed reacts to #isOn', () => {
@@ -277,13 +297,71 @@ describe( 'ButtonView', () => {
 				view.isOn = false;
 				expect( view.element.hasAttribute( 'aria-pressed' ) ).to.be.false;
 			} );
+
+			it( '-checked reacts on #isOn', () => {
+				view.isOn = true;
+				expect( view.element.attributes[ 'aria-checked' ].value ).to.equal( 'true' );
+
+				view.isOn = false;
+				expect( view.element.hasAttribute( 'aria-checked' ) ).to.be.false;
+			} );
+
+			it( '-label reacts on #ariaLabel', () => {
+				view.ariaLabel = undefined;
+				expect( view.element.hasAttribute( 'aria-label' ) ).to.be.false;
+
+				view.ariaLabel = 'Foo';
+				expect( view.element.attributes[ 'aria-label' ].value ).to.equal( 'Foo' );
+			} );
 		} );
 
 		describe( 'mousedown event', () => {
-			it( 'should be prevented', () => {
+			it( 'should not be prevented', () => {
 				const ret = view.element.dispatchEvent( new Event( 'mousedown', { cancelable: true } ) );
 
-				expect( ret ).to.false;
+				expect( ret ).to.true;
+			} );
+
+			describe( 'in Safari', () => {
+				let view, stub, clock;
+
+				beforeEach( () => {
+					stub = testUtils.sinon.stub( env, 'isSafari' ).value( true );
+					clock = testUtils.sinon.useFakeTimers();
+					view = new ButtonView( locale );
+					view.render();
+				} );
+
+				afterEach( () => {
+					stub.resetBehavior();
+					clock.restore();
+					view.destroy();
+				} );
+
+				it( 'the button is focused', () => {
+					const spy = sinon.spy( view.element, 'focus' );
+					view.element.dispatchEvent( new Event( 'mousedown', { cancelable: true } ) );
+					clock.tick( 0 );
+
+					expect( spy.callCount ).to.equal( 1 );
+				} );
+
+				it( 'does not steal focus from other element if the focus already moved', () => {
+					const spy = sinon.spy( view.element, 'focus' );
+					view.element.dispatchEvent( new Event( 'mousedown', { cancelable: true } ) );
+					view.element.dispatchEvent( new Event( 'mouseup', { cancelable: true } ) );
+
+					document.body.focus();
+					clock.tick( 0 );
+
+					expect( spy.callCount ).to.equal( 0 );
+				} );
+
+				it( 'the event is not prevented', () => {
+					const ret = view.element.dispatchEvent( new Event( 'mousedown', { cancelable: true } ) );
+
+					expect( ret ).to.true;
+				} );
 			} );
 		} );
 
@@ -310,7 +388,7 @@ describe( 'ButtonView', () => {
 			view = new ButtonView( locale );
 			view.render();
 
-			expect( view.element.childNodes ).to.have.length( 2 );
+			expect( view.element.childNodes ).to.have.length( 1 );
 			expect( view.iconView.element ).to.be.null;
 		} );
 
@@ -319,7 +397,7 @@ describe( 'ButtonView', () => {
 			view.icon = '<svg></svg>';
 			view.render();
 
-			expect( view.element.childNodes ).to.have.length( 3 );
+			expect( view.element.childNodes ).to.have.length( 2 );
 			expect( view.element.childNodes[ 0 ] ).to.equal( view.iconView.element );
 
 			expect( view.iconView ).to.instanceOf( IconView );
@@ -343,11 +421,11 @@ describe( 'ButtonView', () => {
 	} );
 
 	describe( '#keystrokeView', () => {
-		it( 'is omited in #children when view#icon is not defined', () => {
+		it( 'is omitted in #children when view#withKeystroke is not set', () => {
 			view = new ButtonView( locale );
 			view.render();
 
-			expect( view.element.childNodes ).to.have.length( 2 );
+			expect( view.element.childNodes ).to.have.length( 1 );
 			expect( view.keystrokeView.element ).to.be.null;
 		} );
 
@@ -359,8 +437,8 @@ describe( 'ButtonView', () => {
 			view.withKeystroke = true;
 			view.render();
 
-			expect( view.element.childNodes ).to.have.length( 3 );
-			expect( view.element.childNodes[ 2 ] ).to.equal( view.keystrokeView.element );
+			expect( view.element.childNodes ).to.have.length( 2 );
+			expect( view.element.childNodes[ 1 ] ).to.equal( view.keystrokeView.element );
 
 			expect( view.keystrokeView.element.classList.contains( 'ck' ) ).to.be.true;
 			expect( view.keystrokeView.element.classList.contains( 'ck-button__keystroke' ) ).to.be.true;
@@ -369,7 +447,17 @@ describe( 'ButtonView', () => {
 			expect( view.keystrokeView.element.textContent ).to.equal( 'Ctrl+A' );
 		} );
 
-		it( 'usese fancy kesytroke preview on Mac', () => {
+		it( 'is omitted in #children when view#keystroke is not defined', () => {
+			// (#9412)
+			view = new ButtonView( locale );
+			view.withKeystroke = true;
+			view.render();
+
+			expect( view.element.childNodes ).to.have.length( 1 );
+			expect( view.keystrokeView.element ).to.be.null;
+		} );
+
+		it( 'usese fancy keystroke preview on Mac', () => {
 			testUtils.sinon.stub( env, 'isMac' ).value( true );
 
 			view = new ButtonView( locale );

@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -67,7 +67,7 @@ describe( 'ImageLoadObserver', () => {
 		view.document.on( 'layoutChanged', layoutChangedSpy );
 		view.document.on( 'imageLoaded', imageLoadedSpy );
 
-		observer.isEnabled = false;
+		observer._isEnabled = false;
 
 		observer._fireEvents( {} );
 
@@ -109,6 +109,30 @@ describe( 'ImageLoadObserver', () => {
 		sinon.assert.notCalled( spy );
 	} );
 
+	it( 'should not fire `loadImage` event if an image has `data-cke-ignore-events` attribute', () => {
+		const spy = sinon.spy();
+
+		viewDocument.on( 'imageLoaded', spy );
+
+		setData( view, '<img src="/assets/sample.png" data-cke-ignore-events="true" />' );
+
+		domRoot.querySelector( 'img' ).dispatchEvent( new Event( 'load' ) );
+
+		sinon.assert.notCalled( spy );
+	} );
+
+	it( 'should not fire `loadImage` event if an image has an ancestor with `data-cke-ignore-events` attribute', () => {
+		const spy = sinon.spy();
+
+		viewDocument.on( 'imageLoaded', spy );
+
+		setData( view, '<div data-cke-ignore-events="true"><p><img src="/assets/sample.png" /></p></div>' );
+
+		domRoot.querySelector( 'img' ).dispatchEvent( new Event( 'load' ) );
+
+		sinon.assert.notCalled( spy );
+	} );
+
 	it( 'should do nothing with an image when changes are in the other parent', () => {
 		setData(
 			view,
@@ -146,6 +170,20 @@ describe( 'ImageLoadObserver', () => {
 			view._renderer.render();
 			sinon.assert.calledWith( mapSpy, viewDiv );
 		} ).to.not.throw();
+	} );
+
+	it( 'should stop listening to events on given DOM element', () => {
+		const spy = sinon.spy();
+
+		viewDocument.on( 'imageLoaded', spy );
+
+		setData( view, '<img src="/assets/sample.png" />' );
+
+		observer.stopObserving( domRoot );
+
+		domRoot.querySelector( 'img' ).dispatchEvent( new Event( 'load' ) );
+
+		sinon.assert.notCalled( spy );
 	} );
 
 	it( 'should stop observing images on destroy', () => {

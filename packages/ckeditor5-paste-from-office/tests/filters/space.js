@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -99,6 +99,20 @@ describe( 'PasteFromOffice - filters', () => {
 
 				expect( normalizeSpacing( input ) ).to.equal( expected );
 			} );
+
+			it( 'should detect span with new-line only', () => {
+				const input =
+					'<p><span style="letter-spacing:-.15pt">\n</span>' +
+					'<span\nstyle="letter-spacing:-1.5pt">\r</span>' +
+					'<span style=\'letter-spacing:.15pt\'>\r\n</span></p>';
+
+				const expected =
+					'<p><span style="letter-spacing:-.15pt">\u00A0</span>' +
+					'<span\nstyle="letter-spacing:-1.5pt">\u00A0</span>' +
+					'<span style=\'letter-spacing:.15pt\'>\u00A0</span></p>';
+
+				expect( normalizeSpacing( input ) ).to.equal( expected );
+			} );
 		} );
 
 		describe( 'normalizeSpacerunSpans()', () => {
@@ -135,6 +149,22 @@ describe( 'PasteFromOffice - filters', () => {
 				normalizeSpacerunSpans( htmlDocument );
 
 				expect( htmlDocument.body.innerHTML.replace( /'/g, '"' ).replace( /: /g, ':' ) ).to.equal( expected );
+			} );
+
+			it( 'should use innerText setter instead of innerHTML', () => {
+				const input = '<span style=\'mso-spacerun:yes\'>   </span>';
+
+				const domParser = new DOMParser();
+				const htmlDocument = domParser.parseFromString( input, 'text/html' );
+
+				const spanElement = htmlDocument.getElementsByTagName( 'span' )[ 0 ];
+				const innerHTMLSpy = sinon.spy( spanElement, 'innerHTML', [ 'set' ] );
+				const innerTextSpy = sinon.spy( spanElement, 'innerText', [ 'set' ] );
+
+				normalizeSpacerunSpans( htmlDocument );
+
+				sinon.assert.notCalled( innerHTMLSpy.set );
+				sinon.assert.calledOnce( innerTextSpy.set );
 			} );
 		} );
 	} );

@@ -1,9 +1,8 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
-import { assertEqualMarkup } from '@ckeditor/ckeditor5-utils/tests/_utils/utils';
 import { setData } from '@ckeditor/ckeditor5-engine/src/dev-utils/model';
 import TableWalker from '../../src/tablewalker';
 
@@ -36,7 +35,9 @@ const WIDGET_TABLE_CELL_CLASS = 'ck-editor__editable ck-editor__nested-editable'
  *
  * @returns {String}
  */
-export function modelTable( tableData, attributes ) {
+export function modelTable( tableData, attributes = {} ) {
+	const { columnWidths, ...attrs } = attributes;
+
 	const tableRows = makeRows( tableData, {
 		cellElement: 'tableCell',
 		rowElement: 'tableRow',
@@ -45,7 +46,9 @@ export function modelTable( tableData, attributes ) {
 		enforceWrapping: true
 	} );
 
-	return `<table${ formatAttributes( attributes ) }>${ tableRows }</table>`;
+	const tableCols = makeColGroup( columnWidths );
+
+	return `<table${ formatAttributes( attrs ) }>${ tableRows }${ tableCols }</table>`;
 }
 
 /**
@@ -141,6 +144,10 @@ export function setTableWithObjectAttributes( model, attributes, cellContent ) {
  * @returns {String}
  */
 export function viewTable( tableData, attributes = {} ) {
+	if ( attributes.headingColumns ) {
+		throw new Error( 'The headingColumns attribute is not supported in viewTable util' );
+	}
+
 	const headingRows = attributes.headingRows || 0;
 	const asWidget = !!attributes.asWidget;
 
@@ -216,7 +223,7 @@ export function assertTableStyle( editor, tableStyle, figureStyle ) {
 	const tableStyleEntry = tableStyle ? ` style="${ tableStyle }"` : '';
 	const figureStyleEntry = figureStyle ? ` style="${ figureStyle }"` : '';
 
-	assertEqualMarkup( editor.getData(),
+	expect( editor.getData() ).to.equalMarkup(
 		`<figure class="table"${ figureStyleEntry }>` +
 			`<table${ tableStyleEntry }>` +
 				'<tbody><tr><td>foo</td></tr></tbody>' +
@@ -232,7 +239,7 @@ export function assertTableStyle( editor, tableStyle, figureStyle ) {
  * @param {String} [tableCellStyle=''] A style to assert on td.
  */
 export function assertTableCellStyle( editor, tableCellStyle ) {
-	assertEqualMarkup( editor.getData(),
+	expect( editor.getData() ).to.equalMarkup(
 		'<figure class="table"><table><tbody><tr>' +
 		`<td${ tableCellStyle ? ` style="${ tableCellStyle }"` : '' }>foo</td>` +
 		'</tr></tbody></table></figure>'
@@ -372,6 +379,7 @@ function makeRows( tableData, options ) {
 				if ( asWidget ) {
 					attributes.class = getClassToSet( attributes );
 					attributes.contenteditable = 'true';
+					attributes.role = 'textbox';
 				}
 
 				if ( isObject ) {
@@ -382,8 +390,11 @@ function makeRows( tableData, options ) {
 				}
 
 				if ( !( contents.replace( '[', '' ).replace( ']', '' ).startsWith( '<' ) ) && enforceWrapping ) {
+					const wrappingElementStart = wrappingElement == 'span' ?
+						'span class="ck-table-bogus-paragraph"' : wrappingElement;
+
 					contents =
-						`<${ wrappingElement == 'span' ? 'span style="display:inline-block"' : wrappingElement }>` +
+						`<${ wrappingElementStart }>` +
 						contents +
 						`</${ wrappingElement }>`;
 				}
@@ -398,6 +409,19 @@ function makeRows( tableData, options ) {
 
 			return `${ previousRowsString }<${ rowElement }>${ tableRowString }</${ rowElement }>`;
 		}, '' );
+}
+
+function makeColGroup( columnWidths ) {
+	if ( !columnWidths ) {
+		return '';
+	}
+
+	const cols = columnWidths
+		.split( ',' )
+		.map( width => `<tableColumn columnWidth="${ width }"></tableColumn>` )
+		.join( '' );
+
+	return `<tableColumnGroup>${ cols }</tableColumnGroup>`;
 }
 
 // Properly handles passed CSS class - editor do sort them.

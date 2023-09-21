@@ -1,832 +1,157 @@
-CKEditor 5 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Check%20out%20CKEditor%205%20on%20GitHub&url=https%3A%2F%2Fgithub.com%2Fckeditor%2Fckeditor5)
+CKEditor&nbsp;5 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Check%20out%20CKEditor%205%20on%20GitHub&url=https%3A%2F%2Fgithub.com%2Fckeditor%2Fckeditor5)
 ===================================
 
 [![npm version](https://badge.fury.io/js/ckeditor5.svg)](https://www.npmjs.com/package/ckeditor5)
-
-[![Build Status](https://travis-ci.org/ckeditor/ckeditor5.svg?branch=master)](https://travis-ci.org/ckeditor/ckeditor5)
-[![Dependency Status](https://img.shields.io/david/ckeditor/ckeditor5.svg)](https://david-dm.org/ckeditor/ckeditor5)
-[![devDependency Status](https://img.shields.io/david/dev/ckeditor/ckeditor5.svg)](https://david-dm.org/ckeditor/ckeditor5?type=dev)
+[![Coverage Status](https://coveralls.io/repos/github/ckeditor/ckeditor5/badge.svg?branch=master)](https://coveralls.io/github/ckeditor/ckeditor5?branch=master)
+[![CircleCI](https://circleci.com/gh/ckeditor/ckeditor5.svg?style=shield)](https://app.circleci.com/pipelines/github/ckeditor/ckeditor5?branch=master)
+![TypeScript Support](https://badgen.net/badge/Built%20With/TypeScript/blue)
 
 [![Join newsletter](https://img.shields.io/badge/join-newsletter-00cc99.svg)](http://eepurl.com/c3zRPr)
-[![Follow twitter](https://img.shields.io/badge/follow-twitter-00cc99.svg)](https://twitter.com/ckeditor)
+[![Follow Twitter](https://img.shields.io/badge/follow-twitter-00cc99.svg)](https://twitter.com/ckeditor)
 
-A set of ready-to-use rich text editors created with a powerful framework. Made with real-time collaborative editing in mind.
+CKEditor&nbsp;5 is an ultra-modern JavaScript rich-text editor with MVC architecture, a custom data model, and virtual DOM. It is written from scratch in TypeScript and has excellent webpack and Vite support. It provides every type of WYSIWYG editing solution imaginable with extensive collaboration support. From editors similar to Google Docs and Medium to Slack or Twitter-like applications, all is possible within a single editing framework. As a market leader, it is constantly expanded and updated.
 
-![CKEditor 5 Classic rich text editor build screenshot](https://c.cksource.com/a/1/img/npm/ckeditor5-build-classic.png)
+![A composition of screenshots presenting various features of CKEditor&nbsp;5 rich text editor](https://user-images.githubusercontent.com/1099479/179190754-f4aaf2b3-21cc-49c4-a454-8de4a00cc70e.jpg)
 
 ## Table of contents
 
-* [Quick start](#quick-start)
-   * [CKEditor 5 Builds](#ckeditor-5-builds)
-   * [CKEditor 5 Framework](#ckeditor-5-framework)
-* [Documentation and FAQ](#documentation-and-faq)
-* [Contributing and project organization](#contributing-and-project-organization)
-   * [Ideas and discussions](#ideas-and-discussions)
-   * [Development](#development)
-   * [Reporting issues and feature requests](#reporting-issues-and-feature-requests)
-* [Releases](#releases)
-* [Packages](#packages)
-   * [Core libraries](#core-libraries)
-   * [Builds](#builds)
-   * [Features](#features)
-   * [Editors](#editors)
-   * [Themes](#themes)
-* [License](#license)
+- [CKEditor&nbsp;5 ](#ckeditor-5-)
+	- [Table of contents](#table-of-contents)
+	- [Quick start](#quick-start)
+		- [CKEditor&nbsp;5 online builder](#ckeditor-5-online-builder)
+		- [CKEditor&nbsp;5 predefined builds](#ckeditor-5-predefined-builds)
+			- [Example installation](#example-installation)
+		- [TypeScript support](#typescript-support)
+		- [CKEditor&nbsp;5 advanced installation](#ckeditor-5-advanced-installation)
+			- [CKEditor&nbsp;5 Framework](#ckeditor-5-framework)
+	- [Documentation and FAQ](#documentation-and-faq)
+	- [Releases](#releases)
+	- [Editing and collaboration features](#editing-and-collaboration-features)
+	- [Contributing and project organization](#contributing-and-project-organization)
+		- [Ideas and discussions](#ideas-and-discussions)
+		- [Development](#development)
+		- [Reporting issues and feature requests](#reporting-issues-and-feature-requests)
+	- [License](#license)
 
 ## Quick start
 
-### CKEditor 5 Builds
+### CKEditor&nbsp;5 online builder
 
-CKEditor 5 Builds are a set of ready-to-use rich text editors. Every "build" provides a single type of editor with a set of features and a default configuration.
+The easiest way to start using CKEditor&nbsp;5 with all the features you need, is to prepare a customized build with the [online builder](https://ckeditor.com/ckeditor-5/online-builder/). All you need to do is choose the preferred predefined build as a base, add all the required plugins, and download the ready-to-use package. Refer to the [Online builder Quick start](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/quick-start.html#creating-custom-builds-with-online-builder) guide to follow this installation path.
 
-The following CKEditor 5 Builds are currently available:
+### CKEditor&nbsp;5 predefined builds
 
-* [Classic editor](https://ckeditor.com/docs/ckeditor5/latest/builds/guides/overview.html#classic-editor)
-* [Inline editor](https://ckeditor.com/docs/ckeditor5/latest/builds/guides/overview.html#inline-editor)
-* [Balloon editor](https://ckeditor.com/docs/ckeditor5/latest/builds/guides/overview.html#balloon-editor)
-* [Balloon block editor](https://ckeditor.com/docs/ckeditor5/latest/builds/guides/overview.html#balloon-block-editor)
-* [Document editor](https://ckeditor.com/docs/ckeditor5/latest/builds/guides/overview.html#document-editor)
+CKEditor&nbsp;5 predefined builds are a set of ready-to-use rich text editors. Every build provides a single type of editor with a set of features and a default configuration.
 
-#### Example
+The following CKEditor&nbsp;5 predefined builds are currently available:
 
-Creating an editor using a CKEditor 5 build is very simple and can be described in two steps:
+* [Classic editor](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/predefined-builds.html#classic-editor)
+* [Inline editor](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/predefined-builds.html#inline-editor)
+* [Balloon editor](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/predefined-builds.html#balloon-editor)
+* [Balloon block editor](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/predefined-builds.html#balloon-block-editor)
+* [Document editor](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/predefined-builds.html#document-editor)
+
+#### Example installation
+
+Creating an editor using a CKEditor&nbsp;5 build is very simple and can be described in two steps:
 
 1. Load the desired editor via the `<script>` tag.
 2. Call the static `create()` method to create the editor.
 
-In your HTML page add an element that CKEditor should replace:
+In your HTML page, add an element that CKEditor should replace:
 
 ```html
 <div id="editor"></div>
 ```
 
-Load the classic editor build (you can choose between [CDN](https://cdn.ckeditor.com/#ckeditor5), [npm](https://ckeditor.com/docs/ckeditor5/latest/builds/guides/integration/installation.html#npm) and [zip downloads](https://ckeditor.com/docs/ckeditor5/latest/builds/guides/integration/installation.html#zip-download)):
+Load the classic editor build (you can choose between the [CDN](https://cdn.ckeditor.com/#ckeditor5), [npm](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/predefined-builds.html#npm), and [zip downloads](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/predefined-builds.html#zip-download)):
 
 ```html
-<script src="https://cdn.ckeditor.com/ckeditor5/<version>/classic/ckeditor.js"></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.2/classic/ckeditor.js"></script>
 ```
 
 Call the [`ClassicEditor.create()`](https://ckeditor.com/docs/ckeditor5/latest/api/module_editor-classic_classiceditor-ClassicEditor.html#static-function-create) method:
 
 ```html
 <script>
-    ClassicEditor
-        .create( document.querySelector( '#editor' ) )
-        .catch( error => {
-            console.error( error );
-        } );
+	ClassicEditor
+		.create( document.querySelector( '#editor' ) )
+		.catch( error => {
+			console.error( error );
+		} );
 </script>
 ```
 
 You’re ready to go!
 
-To find out how to start with other builds check the [Quick start guide in the CKEditor 5 documentation](https://ckeditor.com/docs/ckeditor5/latest/builds/guides/quick-start.html).
+To find out how to start with other builds, check the [Predefined builds](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/predefined-builds.html) guide in the CKEditor&nbsp;5 documentation.
 
-### CKEditor 5 Framework
+### TypeScript support
 
-CKEditor 5 Builds allow you to quickly and easily initialize one of the many types of editors in your application. At the same time, CKEditor 5 is also a framework for creating custom-made rich text editing solutions.
+CKEditor&nbsp;5 is a TypeScript project. Starting from v37.0.0, it offers native type definitions. Check out our dedicated guide to read more about [TypeScript support](https://ckeditor.com/docs/ckeditor5/latest/installation/working-with-typescript.html).
 
-To find out how to start building your own editor from scratch go to [CKEditor 5 Framework overview section of CKEditor 5 documentation](https://ckeditor.com/docs/ckeditor5/latest/framework/guides/overview.html).
+### CKEditor&nbsp;5 advanced installation
+
+For more advanced users or those who need to integrate CKEditor&nbsp;5 with their applications, we have prepared several other, advanced methods to do it. You can:
+* Integrate the editor from source [using webpack](https://ckeditor.com/docs/ckeditor5/latest/installation/advanced/alternative-setups/integrating-from-source-webpack.html) or [Vite](https://ckeditor.com/docs/ckeditor5/latest/installation/advanced/alternative-setups/integrating-from-source-vite.html)
+* Use [DLL builds](https://ckeditor.com/docs/ckeditor5/latest/installation/advanced/alternative-setups/dll-builds.html)
+* Use some of the pre-made integrations with popular [JavaScript frameworks](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/frameworks/overview.html):
+  * [Angular](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/frameworks/angular.html)
+  * [React](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/frameworks/react.html)
+  * [Vue](https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/frameworks/vuejs-v3.html)
+
+#### CKEditor&nbsp;5 Framework
+
+CKEditor&nbsp;5 builds allow you to quickly and easily initialize one of the many types of editors in your application. At the same time, CKEditor&nbsp;5 is also a framework for creating custom-made rich text editing solutions.
+
+To find out how to start building your editor from scratch go to the [CKEditor&nbsp;5 Framework overview](https://ckeditor.com/docs/ckeditor5/latest/framework/index.html) section of the CKEditor&nbsp;5 documentation.
 
 ## Documentation and FAQ
 
-To find out more see the following [CKEditor 5 documentation](https://ckeditor.com/docs/ckeditor5/latest/index.html) sections:
+Extensive documentation dedicated to all things CKEditor&nbsp;5-related is available. You will find basic guides that will help you kick off your project, advanced deep-dive tutorials to tailor the editor to your specific needs, and help sections with solutions and answers to any of your possible questions. To find out more refer to the following [CKEditor&nbsp;5 documentation](https://ckeditor.com/docs/ckeditor5/latest/index.html) sections:
 
+* [Installing CKEditor&nbsp;5](https://ckeditor.com/docs/ckeditor5/latest/installation/index.html)
+* [CKEditor&nbsp;5 features](https://ckeditor.com/docs/ckeditor5/latest/features/index.html)
+* [CKEditor&nbsp;5 examples](https://ckeditor.com/docs/ckeditor5/latest/examples/index.html)
+* [Updating CKEditor&nbsp;5](https://ckeditor.com/docs/ckeditor5/latest/updating/index.html)
+* [Getting CKEditor&nbsp;5 support](https://ckeditor.com/docs/ckeditor5/latest/support/index.html)
+* [CKEditor&nbsp;5 Framework](https://ckeditor.com/docs/ckeditor5/latest/framework/index.html)
 * [API documentation](https://ckeditor.com/docs/ckeditor5/latest/api/index.html)
-* [CKEditor 5 Framework documentation](https://ckeditor.com/docs/ckeditor5/latest/framework/index.html)
-* [CKEditor 5 Builds documentation](https://ckeditor.com/docs/ckeditor5/latest/builds/index.html)
-* [CKEditor 5 Features documentation](https://ckeditor.com/docs/ckeditor5/latest/features/index.html)
-* [CKEditor 5 Examples](https://ckeditor.com/docs/ckeditor5/latest/examples/index.html)
-
-The documentation is far from being complete and will be constantly evolving (as will the editor) until it is ready for v1.0.0.
 
 For FAQ please go to the [CKEditor Ecosystem help center](https://support.ckeditor.com/hc/en-us).
 For a high-level overview of the project see the [CKEditor Ecosystem website](https://ckeditor.com).
+
+## Releases
+
+Follow the [CKEditor&nbsp;5 changelog](https://github.com/ckeditor/ckeditor5/blob/stable/CHANGELOG.md) for release details and check out the CKEditor&nbsp;5 release blog posts on the [CKSource blog](https://ckeditor.com/blog/?category=releases&tags=CKEditor-5) for important release highlights and additional information.
+
+## Editing and collaboration features
+
+The CKEditor&nbsp;5 Framework offers access to a plethora of various plugins, supporting [all kinds of editing features](https://ckeditor.com/docs/ckeditor5/latest/features/index.html).
+
+From collaborative editing support providing comments and tracking changes, through editing tools that let users control the content looks and structure such as tables, lists, font styles, to accessibility helpers and multi-language support - CKEditor&nbsp;5 is easily extensible and customizable. Special duty features like Markdown input and output and source editing, or export to PDF and Word provide solutions for users with diverse and specialized needs. Images and videos are easily supported and CKEditor&nbsp;5 offers various upload and storage systems to manage these.
+
+The number of options and the ease of customization and adding new ones make the editing experience even better for any environment and professional background.
+
+Refer to the [CKEditor&nbsp;5 Features](https://ckeditor.com/docs/ckeditor5/latest/features/index.html) documentation for details.
 
 ## Contributing and project organization
 
 ### Ideas and discussions
 
-The development repository of CKEditor 5 is located at [https://github.com/ckeditor/ckeditor5](https://github.com/ckeditor/ckeditor5). This is the best place for bringing opinions and contributions. Letting the core team know if they are going in the right or wrong direction is great feedback and will be much appreciated!
+The development repository of CKEditor&nbsp;5 is located at [https://github.com/ckeditor/ckeditor5](https://github.com/ckeditor/ckeditor5). This is the best place for bringing opinions and contributions. Letting the core team know if they are going in the right or wrong direction is great feedback and will be much appreciated!
 
 ### Development
 
-CKEditor 5 is a modular, multi-package, [monorepo](https://en.wikipedia.org/wiki/Monorepo) project. It consists of several packages that create the editing framework, based on which the feature packages are implemented.
+CKEditor&nbsp;5 is a modular, multi-package, [monorepo](https://en.wikipedia.org/wiki/Monorepo) project. It consists of several packages that create the editing framework, based on which the feature packages are implemented.
 
-The [ckeditor5](https://github.com/ckeditor/ckeditor5) repository is the place that centralizes the development of CKEditor 5. It bundles different packages into a single place, adding the necessary helper tools for the development workflow, like the builder and the test runner. [Basic information on how to set up the development environment](https://ckeditor.com/docs/ckeditor5/latest/framework/guides/contributing/development-environment.html) can be found in the documentation.
+The [`ckeditor5`](https://github.com/ckeditor/ckeditor5) repository is the place that centralizes the development of CKEditor&nbsp;5. It bundles different packages into a single place, adding the necessary helper tools for the development workflow, like the builder and the test runner. [Basic information on how to set up the development environment](https://ckeditor.com/docs/ckeditor5/latest/framework/contributing/development-environment.html) can be found in the documentation.
 
-See the [official contributors' guide](https://ckeditor.com/docs/ckeditor5/latest/framework/guides/contributing/contributing.html) to learn how to contribute your code to the project.
+See the [official contributors' guide](https://ckeditor.com/docs/ckeditor5/latest/framework/contributing/contributing.html) to learn how to contribute your code to the project.
 
 ### Reporting issues and feature requests
 
-Each repository handles its issues independently. However, it is recommended to report issues in [this repository](https://github.com/ckeditor/ckeditor5/issues) unless you know to which specific repository the issue belongs.
-
-Read more on the [Support](https://ckeditor.com/docs/ckeditor5/latest/framework/guides/support/getting-support.html) page.
-
-## Releases
-
-See CKEditor 5 release blog posts [on the CKEditor blog](https://ckeditor.com/blog/?category=releases&tags=CKEditor-5).
-
-## Packages
-
-### Core libraries
-
-<table>
-<thead>
-	<tr>
-		<th width="30%">Name</th>
-		<th width="15%">Version</th>
-		<th width="55%">Description</th>
-	</tr>
-</thead>
-<tbody>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-engine"><code>@ckeditor/ckeditor5-engine</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-engine"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-engine.svg" alt="@ckeditor/ckeditor5-engine npm package badge"></a>
-	</td>
-	<td>
-		The editing engine.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-core"><code>@ckeditor/ckeditor5-core</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-core"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-core.svg" alt="@ckeditor/ckeditor5-core npm package badge"></a>
-	</td>
-	<td>
-		The core editor architecture.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-ui"><code>@ckeditor/ckeditor5-ui</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-ui"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-ui.svg" alt="@ckeditor/ckeditor5-ui npm package badge"></a>
-	</td>
-	<td>
-		The editor UI library.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-utils"><code>@ckeditor/ckeditor5-utils</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-utils"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-utils.svg" alt="@ckeditor/ckeditor5-utils npm package badge"></a>
-	</td>
-	<td>
-		The editor utilities library.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-upload"><code>@ckeditor/ckeditor5-upload</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-upload"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-upload.svg" alt="@ckeditor/ckeditor5-upload npm package badge"></a>
-	</td>
-	<td>
-		The file upload utilities.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-widget"><code>@ckeditor/ckeditor5-widget</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-widget"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-widget.svg" alt="@ckeditor/ckeditor5-widget npm package badge"></a>
-	</td>
-	<td>
-		The widget API.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-watchdog"><code>@ckeditor/ckeditor5-watchdog</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-watchdog"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-watchdog.svg" alt="@ckeditor/ckeditor5-watchdog npm package badge"></a>
-	</td>
-	<td>
-		The watchdog feature, which keeps CKEditor 5 editors running.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-cloud-services"><code>@ckeditor/ckeditor5-cloud-services</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-cloud-services"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-cloud-services.svg" alt="@ckeditor/ckeditor5-cloud-services npm package badge"></a>
-	</td>
-	<td>
-		CKEditor 5's Cloud Services integration layer.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor-cloud-services-core"><code>@ckeditor/ckeditor-cloud-services-core</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor-cloud-services-core"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor-cloud-services-core.svg" alt="@ckeditor/ckeditor-cloud-services-core npm package badge"></a>
-	</td>
-	<td>
-		CKEditor Cloud Services integration utils.
-	</td>
-</tr>
-
-</tbody>
-</table>
-
-### Builds
-
-<table>
-<thead>
-	<tr>
-		<th width="30%">Name</th>
-		<th width="15%">Version</th>
-		<th width="55%">Description</th>
-	</tr>
-</thead>
-<tbody>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-build-classic"><code>@ckeditor/ckeditor5-build-classic</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-build-classic"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-build-classic.svg" alt="@ckeditor/ckeditor5-build-classic npm package badge"></a>
-	</td>
-	<td>
-		The classic editor build.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-build-inline"><code>@ckeditor/ckeditor5-build-inline</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-build-inline"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-build-inline.svg" alt="@ckeditor/ckeditor5-build-inline npm package badge"></a>
-	</td>
-	<td>
-		The inline editor build.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-build-balloon"><code>@ckeditor/ckeditor5-build-balloon</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-build-balloon"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-build-balloon.svg" alt="@ckeditor/ckeditor5-build-balloon npm package badge"></a>
-	</td>
-	<td>
-		The balloon editor (Medium-like) build.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-build-balloon-block"><code>@ckeditor/ckeditor5-build-balloon-block</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-build-balloon-block"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-build-balloon-block.svg" alt="@ckeditor/ckeditor5-build-balloon-block npm package badge"></a>
-	</td>
-	<td>
-		The balloon editor with a block toolbar (Slack–like) build.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-build-decoupled-document"><code>@ckeditor/ckeditor5-build-decoupled-document</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-build-decoupled-document"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-build-decoupled-document.svg" alt="@ckeditor/ckeditor5-build-decoupled-document npm package badge"></a>
-	</td>
-	<td>
-		The document editor build, featuring the decoupled UI editor implementation.
-	</td>
-</tr>
-
-</tbody>
-</table>
-
-### Features
-
-<table>
-<thead>
-	<tr>
-		<th width="30%">Name</th>
-		<th width="15%">Version</th>
-		<th width="55%">Description</th>
-	</tr>
-</thead>
-<tbody>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-adapter-ckfinder"><code>@ckeditor/ckeditor5-adapter-ckfinder</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-adapter-ckfinder"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-adapter-ckfinder.svg" alt="@ckeditor/ckeditor5-adapter-ckfinder npm package badge"></a>
-	</td>
-	<td>
-		The <a href="https://ckeditor.com/ckfinder/">CKFinder</a> adapter for features which require upload capabilities (e.g. image upload).
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-alignment"><code>@ckeditor/ckeditor5-alignment</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-alignment"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-alignment.svg" alt="@ckeditor/ckeditor5-alignment npm package badge"></a>
-	</td>
-	<td>
-		The text alignment feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-autoformat"><code>@ckeditor/ckeditor5-autoformat</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-autoformat"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-autoformat.svg" alt="@ckeditor/ckeditor5-autoformat npm package badge"></a>
-	</td>
-	<td>
-		The autoformatting feature. Replaces predefined characters with a corresponding format (e.g. <code>**foo**</code> becomes bold <code>&lt;strong&gt;foo&lt;/strong&gt;</code>).
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-autosave"><code>@ckeditor/ckeditor5-autosave</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-autosave"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-autosave.svg" alt="@ckeditor/ckeditor5-autosave npm package badge"></a>
-	</td>
-	<td>
-		The autosave feature. Makes it easy to automatically save the data to the backend.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-basic-styles"><code>@ckeditor/ckeditor5-basic-styles</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-basic-styles"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-basic-styles.svg" alt="@ckeditor/ckeditor5-basic-styles npm package badge"></a>
-	</td>
-	<td>
-		The bold, italic, underline and code features.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-block-quote"><code>@ckeditor/ckeditor5-block-quote</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-block-quote"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-block-quote.svg" alt="@ckeditor/ckeditor5-block-quote npm package badge"></a>
-	</td>
-	<td>
-		The block quote feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-ckfinder"><code>@ckeditor/ckeditor5-ckfinder</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-ckfinder"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-ckfinder.svg" alt="@ckeditor/ckeditor5-ckfinder npm package badge"></a>
-	</td>
-	<td>
-		The <a href="https://ckeditor.com/ckfinder/">CKFinder</a> file browser integration.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-clipboard"><code>@ckeditor/ckeditor5-clipboard</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-clipboard"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-clipboard.svg" alt="@ckeditor/ckeditor5-clipboard npm package badge"></a>
-	</td>
-	<td>
-		The clipboard integration.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-code-block"><code>@ckeditor/ckeditor5-code-block</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-code-block"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-code-block.svg" alt="@ckeditor/ckeditor5-code-block npm package badge"></a>
-	</td>
-	<td>
-		The code block feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-enter"><code>@ckeditor/ckeditor5-enter</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-enter"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-enter.svg" alt="@ckeditor/ckeditor5-enter npm package badge"></a>
-	</td>
-	<td>
-		The <kbd>Enter</kbd> key feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-easy-image"><code>@ckeditor/ckeditor5-easy-image</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-easy-image"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-easy-image.svg" alt="@ckeditor/ckeditor5-easy-image npm package badge"></a>
-	</td>
-	<td>
-		Easy Image with CKEditor Cloud Services feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-font"><code>@ckeditor/ckeditor5-font</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-font"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-font.svg" alt="@ckeditor/ckeditor5-font npm package badge"></a>
-	</td>
-	<td>
-		The font size and font family features.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-heading"><code>@ckeditor/ckeditor5-heading</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-heading"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-heading.svg" alt="@ckeditor/ckeditor5-heading npm package badge"></a>
-	</td>
-	<td>
-		The heading feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-highlight"><code>@ckeditor/ckeditor5-highlight</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-highlight"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-highlight.svg" alt="@ckeditor/ckeditor5-highlight npm package badge"></a>
-	</td>
-	<td>
-		The highlight feature (markers and pens).
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-horizontal-line"><code>@ckeditor/ckeditor5-horizontal-line</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-horizontal-line"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-horizontal-line.svg" alt="@ckeditor/ckeditor5-horizontal-line npm package badge"></a>
-	</td>
-	<td>
-		The horizontal rule feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-image"><code>@ckeditor/ckeditor5-image</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-image"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-image.svg" alt="@ckeditor/ckeditor5-image npm package badge"></a>
-	</td>
-	<td>
-		The image feature. Supports image styles, captioning, upload, resizing, and more.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-indent"><code>@ckeditor/ckeditor5-indent</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-indent"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-indent.svg" alt="@ckeditor/ckeditor5-indent npm package badge"></a>
-	</td>
-	<td>
-		The indentation (of lists and blocks) feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-link"><code>@ckeditor/ckeditor5-link</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-link"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-link.svg" alt="@ckeditor/ckeditor5-link npm package badge"></a>
-	</td>
-	<td>
-		The link feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-list"><code>@ckeditor/ckeditor5-list</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-list"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-list.svg" alt="@ckeditor/ckeditor5-list npm package badge"></a>
-	</td>
-	<td>
-		The numbered and bulleted lists feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-markdown-gfm"><code>@ckeditor/ckeditor5-markdown-gfm</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-markdown-gfm"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-markdown-gfm.svg" alt="@ckeditor/ckeditor5-markdown-gfm npm package badge"></a>
-	</td>
-	<td>
-		The GitHub-flavored Markdown data processor.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-media-embed"><code>@ckeditor/ckeditor5-media-embed</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-media-embed"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-media-embed.svg" alt="@ckeditor/ckeditor5-media-embed npm package badge"></a>
-	</td>
-	<td>
-		The media embed feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-mention"><code>@ckeditor/ckeditor5-mention</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-mention"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-mention.svg" alt="@ckeditor/ckeditor5-mention npm package badge"></a>
-	</td>
-	<td>
-		The mention feature (autocomplete `@mentions`, `#tags`, etc.).
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-page-break"><code>@ckeditor/ckeditor5-page-break</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-page-break"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-page-break.svg" alt="@ckeditor/ckeditor5-page-break npm package badge"></a>
-	</td>
-	<td>
-		The page break feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-paragraph"><code>@ckeditor/ckeditor5-paragraph</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-paragraph"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-paragraph.svg" alt="@ckeditor/ckeditor5-paragraph npm package badge"></a>
-	</td>
-	<td>
-		The paragraph feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-paste-from-office"><code>@ckeditor/ckeditor5-paste-from-office</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-paste-from-office"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-paste-from-office.svg" alt="@ckeditor/ckeditor5-paste-from-office npm package badge"></a>
-	</td>
-	<td>
-		The Paste from Office (Word, Excel, Google Docs, etc.) plugin.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-remove-format"><code>@ckeditor/ckeditor5-remove-format</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-remove-format"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-remove-format.svg" alt="@ckeditor/ckeditor5-remove-format npm package badge"></a>
-	</td>
-	<td>
-		The remove format feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-restricted-editing"><code>@ckeditor/ckeditor5-restricted-editing</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-restricted-editing"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-restricted-editing.svg" alt="@ckeditor/ckeditor5-restricted-editing npm package badge"></a>
-	</td>
-	<td>
-		The restricted editing feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-select-all"><code>@ckeditor/ckeditor5-select-all</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-select-all"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-select-all.svg" alt="@ckeditor/ckeditor5-select-all npm package badge"></a>
-	</td>
-	<td>
-		The "select all" feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-special-characters"><code>@ckeditor/ckeditor5-special-characters</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-special-characters"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-special-characters.svg" alt="@ckeditor/ckeditor5-special-characters npm package badge"></a>
-	</td>
-	<td>
-		The special characters feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-table"><code>@ckeditor/ckeditor5-table</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-table"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-table.svg" alt="@ckeditor/ckeditor5-table npm package badge"></a>
-	</td>
-	<td>
-		The table feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-typing"><code>@ckeditor/ckeditor5-typing</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-typing"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-typing.svg" alt="@ckeditor/ckeditor5-typing npm package badge"></a>
-	</td>
-	<td>
-		The typing and deleting features.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-undo"><code>@ckeditor/ckeditor5-undo</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-undo"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-undo.svg" alt="@ckeditor/ckeditor5-undo npm package badge"></a>
-	</td>
-	<td>
-		The undo feature.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-word-count"><code>@ckeditor/ckeditor5-word-count</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-word-count"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-word-count.svg" alt="@ckeditor/ckeditor5-word-count npm package badge"></a>
-	</td>
-	<td>
-		The word count feature.
-	</td>
-</tr>
-
-</tbody>
-</table>
-
-### Editors
-
-<table>
-<thead>
-	<tr>
-		<th width="30%">Name</th>
-		<th width="15%">Version</th>
-		<th width="55%">Description</th>
-	</tr>
-</thead>
-<tbody>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-editor-classic"><code>@ckeditor/ckeditor5-editor-classic</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-editor-classic"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-editor-classic.svg" alt="@ckeditor/ckeditor5-editor-classic npm package badge"></a>
-	</td>
-	<td>
-		The classic editor implementation.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-editor-inline"><code>@ckeditor/ckeditor5-editor-inline</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-editor-inline"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-editor-inline.svg" alt="@ckeditor/ckeditor5-editor-inline npm package badge"></a>
-	</td>
-	<td>
-		The inline editor implementation.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-editor-balloon"><code>@ckeditor/ckeditor5-editor-balloon</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-editor-balloon"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-editor-balloon.svg" alt="@ckeditor/ckeditor5-editor-balloon npm package badge"></a>
-	</td>
-	<td>
-		The balloon editor (Medium-like) implementation.
-	</td>
-</tr>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-editor-decoupled"><code>@ckeditor/ckeditor5-editor-decoupled</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-editor-decoupled"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-editor-decoupled.svg" alt="@ckeditor/ckeditor5-editor-decoupled npm package badge"></a>
-	</td>
-	<td>
-		The editor implementation with a decoupled UI.
-	</td>
-</tr>
-
-</tbody>
-</table>
-
-### Themes
-
-<table>
-<thead>
-	<tr>
-		<th width="30%">Name</th>
-		<th width="15%">Version</th>
-		<th width="55%">Description</th>
-	</tr>
-</thead>
-<tbody>
-
-<tr>
-	<td>
-		<a href="https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-theme-lark"><code>@ckeditor/ckeditor5-theme-lark</code></a>
-	</td>
-	<td>
-		<a href="https://www.npmjs.com/package/@ckeditor/ckeditor5-theme-lark"><img src="https://img.shields.io/npm/v/@ckeditor/ckeditor5-theme-lark.svg" alt="@ckeditor/ckeditor5-theme-lark npm package badge"></a>
-	</td>
-	<td>
-		The Lark theme.
-	</td>
-</tr>
-
-</tbody>
-</table>
+Report issues in [the `ckeditor5` repository](https://github.com/ckeditor/ckeditor5/issues). Read more on the [Getting support](https://ckeditor.com/docs/ckeditor5/latest/support/getting-support.html) guide.
 
 ## License
 

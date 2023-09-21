@@ -1,41 +1,49 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 /* globals console, window, document */
 
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic/src/ckeditor';
-import Code from '@ckeditor/ckeditor5-basic-styles/src/code';
-import CodeBlock from '@ckeditor/ckeditor5-code-block/src/codeblock';
-import Strikethrough from '@ckeditor/ckeditor5-basic-styles/src/strikethrough';
+import { Strikethrough, Code, Underline } from '@ckeditor/ckeditor5-basic-styles';
+import { TodoList } from '@ckeditor/ckeditor5-list';
+import { CodeBlock } from '@ckeditor/ckeditor5-code-block';
+import { HorizontalLine } from '@ckeditor/ckeditor5-horizontal-line';
+import { CKBox } from '@ckeditor/ckeditor5-ckbox';
+import { PictureEditing, ImageResize, AutoImage } from '@ckeditor/ckeditor5-image';
+import { LinkImage } from '@ckeditor/ckeditor5-link';
 import { CS_CONFIG } from '@ckeditor/ckeditor5-cloud-services/tests/_utils/cloud-services-config';
+
+// Umberto combines all `packages/*/docs` into the `docs/` directory. The import path must be valid after merging all directories.
+import ClassicEditor from '../build-classic';
 
 ClassicEditor
 	.create( document.querySelector( '#snippet-autoformat' ), {
-		plugins: ClassicEditor.builtinPlugins.concat( [ Code, CodeBlock, Strikethrough ] ),
+		plugins: ClassicEditor.builtinPlugins.concat( [
+			Code,
+			CodeBlock,
+			HorizontalLine,
+			Strikethrough,
+			Underline,
+			TodoList,
+			PictureEditing,
+			ImageResize,
+			AutoImage,
+			LinkImage,
+			CKBox
+		] ),
 		toolbar: {
 			items: [
-				'heading',
-				'|',
-				'bold',
-				'italic',
-				'strikethrough',
-				'code',
-				'link',
-				'bulletedList',
-				'numberedList',
-				'|',
-				'outdent',
-				'indent',
-				'|',
-				'blockQuote',
-				'codeBlock',
-				'|',
-				'undo',
-				'redo'
-			],
-			viewportTopOffset: window.getViewportTopOffsetConfig()
+				'undo', 'redo', '|', 'heading',
+				'|', 'bold', 'italic', 'underline', 'strikethrough', 'code',
+				'|', 'link', 'uploadImage', 'insertTable', 'blockQuote', 'mediaEmbed', 'codeBlock', 'horizontalLine',
+				'|', 'bulletedList', 'numberedList', 'todolist', 'outdent', 'indent'
+			]
+		},
+		ui: {
+			viewportOffset: {
+				top: window.getViewportTopOffsetConfig()
+			}
 		},
 		cloudServices: CS_CONFIG
 	} )

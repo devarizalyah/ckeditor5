@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -14,9 +14,7 @@ import normalizeClipboardData from '@ckeditor/ckeditor5-clipboard/src/utils/norm
 import normalizeHtml from '@ckeditor/ckeditor5-utils/tests/_utils/normalizehtml';
 import { setData, stringify as stringifyModel } from '@ckeditor/ckeditor5-engine/src/dev-utils/model';
 import { stringify as stringifyView } from '@ckeditor/ckeditor5-engine/src/dev-utils/view';
-import { assertEqualMarkup } from '@ckeditor/ckeditor5-utils/tests/_utils/utils';
 
-import { fixtures, browserFixtures } from './fixtures';
 import { StylesProcessor } from '@ckeditor/ckeditor5-engine/src/view/stylesmap';
 
 const htmlDataProcessor = new HtmlDataProcessor( new ViewDocument( new StylesProcessor() ) );
@@ -52,10 +50,14 @@ export function createDataTransfer( data ) {
  * @param {Array.<String>} config.browsers List of all browsers for which to generate tests.
  * @param {Object} [config.editorConfig] Editor config which is passed to editor `create()` method.
  * @param {Object} [config.skip] List of fixtures for any browser to skip. The supported format is:
- *
  *		{
  *			browserName: [ fixtureName1, fixtureName2 ]
  *		}
+ * @param {Object} [config.only] List of fixtures the test run should be limited to. The supported format is:
+ *		{
+ *			browserName: [ fixtureName1, fixtureName2 ]
+ *		}
+ * @param {Object} config.fixtures Fixtures object with `generic` and `browser` properties.
  */
 export function generateTests( config ) {
 	if ( [ 'normalization', 'integration' ].indexOf( config.type ) === -1 ) {
@@ -70,7 +72,11 @@ export function generateTests( config ) {
 		throw new Error( 'No or empty `config.browsers` option provided.' );
 	}
 
-	const groups = groupFixturesByBrowsers( config.browsers, config.input, config.skip );
+	if ( !config.fixtures ) {
+		throw new Error( 'Fixtures are required to run tests.' );
+	}
+
+	const groups = groupFixturesByBrowsers( config.browsers, config.input, config.skip, config.fixtures );
 	const generateSuiteFn = config.type === 'normalization' ? generateNormalizationTests : generateIntegrationTests;
 
 	describe( config.type, () => {
@@ -78,10 +84,11 @@ export function generateTests( config ) {
 			const editorConfig = config.editorConfig || {};
 
 			for ( const group of Object.keys( groups ) ) {
-				const skip = config.skip && config.skip[ group ] ? config.skip[ group ] : [];
+				const skip = config.skip && config.skip[ group ] || [];
+				const only = config.only && config.only[ group ] || [];
 
 				if ( groups[ group ] ) {
-					generateSuiteFn( group, groups[ group ], editorConfig, skip );
+					generateSuiteFn( group, groups[ group ], editorConfig, skip, only );
 				}
 			}
 		} );
@@ -93,6 +100,8 @@ export function generateTests( config ) {
 //
 // @param {Array.<String>} browsers List of all browsers for which fixture groups will be created.
 // @param {String} fixturesGroup Fixtures group name.
+// @param {Object} skipBrowsers List of fixtures for any browser to skip.
+// @param {Object} fixtures An object containing two keys: `generic` and `browser`.
 // @returns {Object} Object containing browsers groups where key is the name of the group and value is fixtures object:
 //
 //		{
@@ -100,14 +109,14 @@ export function generateTests( config ) {
 //			'edge': { ... }
 //			'chrome, firefox': { ... }
 // 		}
-function groupFixturesByBrowsers( browsers, fixturesGroup, skipBrowsers ) {
+function groupFixturesByBrowsers( browsers, fixturesGroup, skipBrowsers, fixtures ) {
 	const browsersGroups = {};
 	const browsersGeneric = browsers.slice( 0 );
 
 	// Create separate groups for browsers with browser-specific fixtures available.
 	for ( const browser of browsers ) {
-		if ( browserFixtures[ fixturesGroup ] && browserFixtures[ fixturesGroup ][ browser ] ) {
-			browsersGroups[ browser ] = browserFixtures[ fixturesGroup ][ browser ];
+		if ( fixtures.browser[ fixturesGroup ] && fixtures.browser[ fixturesGroup ][ browser ] ) {
+			browsersGroups[ browser ] = fixtures.browser[ fixturesGroup ][ browser ];
 			browsersGeneric.splice( browsersGeneric.indexOf( browser ), 1 );
 		}
 	}
@@ -116,7 +125,7 @@ function groupFixturesByBrowsers( browsers, fixturesGroup, skipBrowsers ) {
 	if ( skipBrowsers ) {
 		for ( const browser of Object.keys( skipBrowsers ) ) {
 			if ( browsersGeneric.indexOf( browser ) !== -1 ) {
-				browsersGroups[ browser ] = fixtures[ fixturesGroup ] ? fixtures[ fixturesGroup ] : null;
+				browsersGroups[ browser ] = fixtures.generic[ fixturesGroup ] ? fixtures.generic[ fixturesGroup ] : null;
 				browsersGeneric.splice( browsersGeneric.indexOf( browser ), 1 );
 			}
 		}
@@ -124,7 +133,7 @@ function groupFixturesByBrowsers( browsers, fixturesGroup, skipBrowsers ) {
 
 	// Use generic fixtures (if available) for browsers left.
 	if ( browsersGeneric.length ) {
-		browsersGroups[ browsersGeneric.join( ', ' ) ] = fixtures[ fixturesGroup ] ? fixtures[ fixturesGroup ] : null;
+		browsersGroups[ browsersGeneric.join( ', ' ) ] = fixtures.generic[ fixturesGroup ] ? fixtures.generic[ fixturesGroup ] : null;
 	}
 
 	return browsersGroups;
@@ -138,7 +147,8 @@ function groupFixturesByBrowsers( browsers, fixturesGroup, skipBrowsers ) {
 // @param {Object} fixtures Object containing fixtures.
 // @param {Object} editorConfig Editor config with which test editor will be created.
 // @param {Array.<String>} skip Array of fixtures names which tests should be skipped.
-function generateNormalizationTests( title, fixtures, editorConfig, skip ) {
+// @param {Array.<String>} only Array of fixtures the test run should be limited to.
+function generateNormalizationTests( title, fixtures, editorConfig, skip, only ) {
 	describe( title, () => {
 		let editor;
 
@@ -155,11 +165,17 @@ function generateNormalizationTests( title, fixtures, editorConfig, skip ) {
 		} );
 
 		for ( const name of Object.keys( fixtures.input ) ) {
-			const testRunner = skip.indexOf( name ) !== -1 ? it.skip : it;
+			let testRunner = it;
+
+			if ( only.includes( name ) ) {
+				testRunner = it.only;
+			} else if ( skip.includes( name ) ) {
+				testRunner = it.skip;
+			}
 
 			testRunner( name, () => {
 				// Simulate data from Clipboard event
-				const clipboardPlugin = editor.plugins.get( 'Clipboard' );
+				const clipboardPlugin = editor.plugins.get( 'ClipboardPipeline' );
 				const content = htmlDataProcessor.toView( normalizeClipboardData( fixtures.input[ name ] ) );
 				const dataTransfer = createDataTransfer( {
 					'text/html': fixtures.input[ name ],
@@ -185,8 +201,8 @@ function generateNormalizationTests( title, fixtures, editorConfig, skip ) {
 // @param {String} title Tests group title.
 // @param {Object} fixtures Object containing fixtures.
 // @param {Object} editorConfig Editor config with which test editor will be created.
-// @param {Array.<String>} skip Array of fixtures names which tests should be skipped.
-function generateIntegrationTests( title, fixtures, editorConfig, skip ) {
+// @param {Array.<String>} only Array of fixtures the test run should be limited to.
+function generateIntegrationTests( title, fixtures, editorConfig, skip, only ) {
 	describe( title, () => {
 		let element, editor;
 		let data = {};
@@ -231,7 +247,13 @@ function generateIntegrationTests( title, fixtures, editorConfig, skip ) {
 		} );
 
 		for ( const name of Object.keys( fixtures.input ) ) {
-			const testRunner = skip.indexOf( name ) !== -1 ? it.skip : it;
+			let testRunner = it;
+
+			if ( only.includes( name ) ) {
+				testRunner = it.only;
+			} else if ( skip.includes( name ) ) {
+				testRunner = it.skip;
+			}
 
 			testRunner( name, () => {
 				data.input = fixtures.input[ name ];
@@ -247,6 +269,8 @@ function generateIntegrationTests( title, fixtures, editorConfig, skip ) {
 // If the given `actual` or `expected` structure contains base64 encoded images,
 // these images are extracted (so HTML diff is readable) and compared
 // one by one separately (so it is visible if base64 representation is malformed).
+//
+// Comments are removed from the expected HTML struture, to be consistent with the actual pasted data in the plugin.
 //
 // This function is designed for comparing normalized data so expected input is preprocessed before comparing:
 //
@@ -274,7 +298,7 @@ function expectNormalized( actualView, expectedHtml ) {
 	// We are ok with both spaces and non-breaking spaces in the actual content.
 	// Replace `&nbsp;` with regular spaces to align with expected content.
 	const actualNormalized = stringifyView( actualView ).replace( /\u00A0/g, ' ' );
-	const expectedNormalized = normalizeHtml( inlineData( expectedHtml ) );
+	const expectedNormalized = normalizeHtml( inlineData( expectedHtml ), { skipComments: true } );
 
 	compareContentWithBase64Images( actualNormalized, expectedNormalized );
 }
@@ -310,7 +334,7 @@ function compareContentWithBase64Images( actual, expected ) {
 
 	// In some rare cases there might be `&nbsp;` in a model data
 	// (see https://github.com/ckeditor/ckeditor5-paste-from-office/issues/27).
-	assertEqualMarkup( actualModel.replace( /\u00A0/g, ' ' ), expectedModel );
+	expect( actualModel.replace( /\u00A0/g, ' ' ) ).to.equalMarkup( expectedModel );
 
 	if ( actualImages.length > 0 && expectedImages.length > 0 ) {
 		expect( actualImages.length ).to.equal( expectedImages.length );

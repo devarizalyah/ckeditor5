@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -53,7 +53,14 @@ describe( 'MarkerCollection', () => {
 			expect( marker.managedUsingOperations ).to.be.false;
 			expect( marker.affectsData ).to.be.false;
 			expect( marker.getRange().isEqual( range ) ).to.be.true;
-			sinon.assert.calledWithExactly( markers.fire, 'update:name', result, null, range );
+
+			expect( markers.fire.firstCall.args ).to.deep.equal( [
+				'update:name',
+				marker,
+				null,
+				range,
+				{ affectsData: false, managedUsingOperations: false, range: null }
+			] );
 		} );
 
 		it( 'should create a marker marked as managed by operations', () => {
@@ -80,7 +87,14 @@ describe( 'MarkerCollection', () => {
 			expect( result ).to.equal( marker );
 			expect( marker.getRange().isEqual( range2 ) ).to.be.true;
 
-			sinon.assert.calledWithExactly( markers.fire, 'update:name', marker, range, range2 );
+			expect( markers.fire.firstCall.args ).to.deep.equal( [
+				'update:name',
+				marker,
+				range,
+				range2,
+				{ affectsData: false, managedUsingOperations: false, range }
+			] );
+
 			sinon.assert.calledOnce( marker._detachLiveRange );
 			sinon.assert.calledOnce( marker._detachLiveRange );
 		} );
@@ -100,7 +114,14 @@ describe( 'MarkerCollection', () => {
 			expect( marker.managedUsingOperations ).to.be.true;
 			expect( marker.getRange().isEqual( range ) ).to.be.true;
 
-			sinon.assert.calledWithExactly( markers.fire, 'update:name', marker, range, range );
+			expect( markers.fire.firstCall.args ).to.deep.equal( [
+				'update:name',
+				marker,
+				range,
+				range,
+				{ affectsData: false, managedUsingOperations: false, range }
+			] );
+
 			sinon.assert.notCalled( marker._detachLiveRange );
 			sinon.assert.notCalled( marker._attachLiveRange );
 		} );
@@ -127,7 +148,7 @@ describe( 'MarkerCollection', () => {
 		it( 'should throw if marker name with "," is added', () => {
 			expectToThrowCKEditorError( () => {
 				markers._set( 'foo,bar', range );
-			}, /^markercollection-incorrect-marker-name:/, markers );
+			}, 'markercollection-incorrect-marker-name', markers );
 		} );
 	} );
 
@@ -139,6 +160,17 @@ describe( 'MarkerCollection', () => {
 		it( 'should return true if marker with given name is in the collection', () => {
 			markers._set( 'name', range );
 			expect( markers.has( 'name' ) ).to.be.true;
+		} );
+
+		it( 'should return false if given instance of marker is not in the collection', () => {
+			const differentMarkerCollection = new MarkerCollection();
+			const marker = differentMarkerCollection._set( 'differentName', range );
+			expect( markers.has( marker ) ).to.be.false;
+		} );
+
+		it( 'should return true if given instance of marker is in the collection', () => {
+			const marker = markers._set( 'name', range );
+			expect( markers.has( marker ) ).to.be.true;
 		} );
 	} );
 
@@ -162,7 +194,14 @@ describe( 'MarkerCollection', () => {
 
 			expect( result ).to.be.true;
 			expect( markers.get( 'name' ) ).to.be.null;
-			sinon.assert.calledWithExactly( markers.fire, 'update:name', marker, range, null );
+
+			expect( markers.fire.firstCall.args ).to.deep.equal( [
+				'update:name',
+				marker,
+				range,
+				null,
+				{ affectsData: false, managedUsingOperations: false, range }
+			] );
 		} );
 
 		it( 'should destroy marker instance', () => {
@@ -196,8 +235,15 @@ describe( 'MarkerCollection', () => {
 			const result = markers._remove( marker );
 
 			expect( result ).to.be.true;
-			expect( markers.fire.calledWithExactly( 'update:name', marker, range, null ) ).to.be.true;
 			expect( markers.get( 'name' ) ).to.be.null;
+
+			expect( markers.fire.firstCall.args ).to.deep.equal( [
+				'update:name',
+				marker,
+				range,
+				null,
+				{ affectsData: false, managedUsingOperations: false, range }
+			] );
 		} );
 	} );
 
@@ -209,13 +255,19 @@ describe( 'MarkerCollection', () => {
 
 			markers._refresh( 'name' );
 
-			sinon.assert.calledWithExactly( markers.fire, 'update:name', marker, range, range, false, false );
+			expect( markers.fire.firstCall.args ).to.deep.equal( [
+				'update:name',
+				marker,
+				range,
+				range,
+				{ affectsData: false, managedUsingOperations: false, range }
+			] );
 		} );
 
 		it( 'should throw if marker does not exist', () => {
 			expectToThrowCKEditorError( () => {
 				markers._refresh( 'name' );
-			}, /^markercollection-refresh-marker-not-exists:/, markers );
+			}, 'markercollection-refresh-marker-not-exists', markers );
 		} );
 	} );
 

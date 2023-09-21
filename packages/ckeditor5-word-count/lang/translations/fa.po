@@ -1,4 +1,4 @@
-# Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+# Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
 #
 #                                     !!! IMPORTANT !!!
 #
@@ -12,14 +12,15 @@
 #
 msgid ""
 msgstr ""
-"Language-Team: Persian (https://www.transifex.com/ckeditor/teams/11143/fa/)\n"
+"Language-Team: Persian (https://app.transifex.com/ckeditor/teams/11143/fa/)\n"
 "Language: fa\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 
 msgctxt "Label showing the number of words in the editor content."
 msgid "Words: %0"
-msgstr "تعداد لغات : 0%"
+msgstr "تعداد لغات : %0"
 
 msgctxt "Label showing the number of characters in the editor content."
 msgid "Characters: %0"
-msgstr "تعداد حروف : 0%"
+msgstr "تعداد حروف : %0"

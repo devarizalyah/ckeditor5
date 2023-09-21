@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -167,6 +167,15 @@ describe( 'view test utils', () => {
 			}, b );
 
 			expect( stringify( p ) ).to.equal( '<p bar="taz" baz="qux" class="short wide"><b foo="bar">foobar</b></p>' );
+		} );
+
+		it( 'should write elements with attributes which values include double quotes', () => {
+			const text = new Text( viewDocument, 'foobar' );
+			const p = new Element( viewDocument, 'p', {
+				style: 'font-family: Calibri, "Times New Roman", sans-serif'
+			}, text );
+
+			expect( stringify( p ) ).to.equal( '<p style="font-family:Calibri, &quot;Times New Roman&quot;, sans-serif">foobar</p>' );
 		} );
 
 		it( 'should write selection ranges inside elements', () => {
@@ -408,6 +417,7 @@ describe( 'view test utils', () => {
 		it( 'should stringify a RawElement', () => {
 			const span = new RawElement( viewDocument, 'span' );
 			const p = new ContainerElement( viewDocument, 'p', null, span );
+
 			expect( stringify( p, null, { showType: true } ) )
 				.to.equal( '<container:p><raw:span></raw:span></container:p>' );
 		} );
@@ -415,12 +425,8 @@ describe( 'view test utils', () => {
 		it( 'should not stringify the inner RawElement content (renderRawElements=false)', () => {
 			const span = new RawElement( viewDocument, 'span' );
 
-			span.render = function( domDocument ) {
-				const domElement = this.toDomElement( domDocument );
-
-				domElement.innerHTML = '<b>foo</b>';
-
-				return domElement;
+			span.render = function( domElement, domConverter ) {
+				domConverter.setContentOf( domElement, '<b>foo</b>' );
 			};
 
 			const p = new ContainerElement( viewDocument, 'p', null, span );
@@ -431,8 +437,8 @@ describe( 'view test utils', () => {
 		it( 'should stringify a RawElement, (renderRawElements=true)', () => {
 			const span = new RawElement( viewDocument, 'span' );
 
-			span.render = function( domElement ) {
-				domElement.innerHTML = '<b>foo</b>';
+			span.render = function( domElement, domConverter ) {
+				domConverter.setContentOf( domElement, '<b>foo</b>' );
 			};
 
 			const p = new ContainerElement( viewDocument, 'p', null, span );

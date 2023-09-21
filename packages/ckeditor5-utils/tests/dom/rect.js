@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -50,6 +50,45 @@ describe( 'Rect', () => {
 			sinon.stub( range, 'getClientRects' ).returns( [ geometry ] );
 
 			assertRect( new Rect( range ), geometry );
+		} );
+
+		it( 'should accept Range (non–collapsed, sequenced horizontally)', () => {
+			const firstGeometry = geometry;
+			const secondGeometry = Object.assign( {}, geometry, {
+				right: 50,
+				left: 40,
+				width: 10
+			} );
+
+			const range = document.createRange();
+			range.selectNode( document.body );
+			sinon.stub( range, 'getClientRects' ).returns( [ firstGeometry, secondGeometry ] );
+
+			const expectedGeometry = Object.assign( {}, geometry, {
+				width: 30,
+				right: 50
+			} );
+
+			assertRect( new Rect( range ), expectedGeometry );
+		} );
+
+		it( 'should accept Range (non–collapsed, sequenced vertically)', () => {
+			const firstGeometry = geometry;
+			const secondGeometry = Object.assign( {}, geometry, {
+				top: 30,
+				bottom: 40
+			} );
+
+			const range = document.createRange();
+			range.selectNode( document.body );
+			sinon.stub( range, 'getClientRects' ).returns( [ firstGeometry, secondGeometry ] );
+
+			const expectedGeometry = Object.assign( {}, geometry, {
+				height: 30,
+				bottom: 40
+			} );
+
+			assertRect( new Rect( range ), expectedGeometry );
 		} );
 
 		// https://github.com/ckeditor/ckeditor5-utils/issues/153
@@ -592,6 +631,53 @@ describe( 'Rect', () => {
 			} );
 		} );
 
+		it( 'should return the visible rect (HTMLElement), partially cropped, ' +
+			'deep ancestor overflow (ancestor with position: absolute)', () => {
+			ancestorB.appendChild( ancestorA );
+			document.body.appendChild( ancestorB );
+
+			element.style.position = 'static';
+			ancestorA.style.position = 'absolute';
+			ancestorB.style.overflow = 'scroll';
+			ancestorB.style.position = 'relative';
+
+			sinon.stub( element, 'getBoundingClientRect' ).returns( {
+				top: 0,
+				right: 100,
+				bottom: 100,
+				left: 0,
+				width: 100,
+				height: 100
+			} );
+
+			sinon.stub( ancestorA, 'getBoundingClientRect' ).returns( {
+				top: 50,
+				right: 100,
+				bottom: 100,
+				left: 0,
+				width: 50,
+				height: 50
+			} );
+
+			sinon.stub( ancestorB, 'getBoundingClientRect' ).returns( {
+				top: 0,
+				right: 150,
+				bottom: 100,
+				left: 50,
+				width: 100,
+				height: 100
+			} );
+
+			assertRect( new Rect( element ).getVisible(), {
+				top: 50,
+				right: 100,
+				bottom: 100,
+				left: 50,
+				width: 50,
+				height: 50
+			} );
+		} );
+
 		it( 'should return the visible rect (Range), partially cropped', () => {
 			range.setStart( ancestorA, 0 );
 			range.setEnd( ancestorA, 1 );
@@ -644,6 +730,147 @@ describe( 'Rect', () => {
 			} );
 
 			expect( new Rect( element ).getVisible() ).to.equal( null );
+		} );
+
+		it( 'should ignore a parent if target is an element with position: absolute', () => {
+			sinon.stub( element, 'getBoundingClientRect' ).returns( {
+				top: 0,
+				right: 100,
+				bottom: 100,
+				left: 0,
+				width: 100,
+				height: 100
+			} );
+
+			element.style.position = 'absolute';
+
+			sinon.stub( ancestorA, 'getBoundingClientRect' ).returns( {
+				top: 50,
+				right: 150,
+				bottom: 150,
+				left: 50,
+				width: 100,
+				height: 100
+			} );
+
+			assertRect( new Rect( element ).getVisible(), {
+				top: 0,
+				right: 100,
+				bottom: 100,
+				left: 0,
+				width: 100,
+				height: 100
+			} );
+		} );
+
+		it( 'should ignore all parents if target is an element with position: absolute', () => {
+			ancestorB.appendChild( ancestorA );
+			document.body.appendChild( ancestorB );
+
+			sinon.stub( element, 'getBoundingClientRect' ).returns( {
+				top: 0,
+				right: 100,
+				bottom: 100,
+				left: 0,
+				width: 100,
+				height: 100
+			} );
+
+			element.style.position = 'absolute';
+
+			sinon.stub( ancestorA, 'getBoundingClientRect' ).returns( {
+				top: 50,
+				right: 150,
+				bottom: 150,
+				left: 50,
+				width: 100,
+				height: 100
+			} );
+
+			sinon.stub( ancestorB, 'getBoundingClientRect' ).returns( {
+				top: 200,
+				right: 300,
+				bottom: 300,
+				left: 200,
+				width: 100,
+				height: 100
+			} );
+
+			assertRect( new Rect( element ).getVisible(), {
+				top: 0,
+				right: 100,
+				bottom: 100,
+				left: 0,
+				width: 100,
+				height: 100
+			} );
+		} );
+
+		it( 'should ignore a parent if target is an element with position: absolute ' +
+			'but parent has position: relative but no overflow', () => {
+			sinon.stub( element, 'getBoundingClientRect' ).returns( {
+				top: 0,
+				right: 100,
+				bottom: 100,
+				left: 0,
+				width: 100,
+				height: 100
+			} );
+
+			element.style.position = 'absolute';
+			ancestorA.style.position = 'relative';
+
+			sinon.stub( ancestorA, 'getBoundingClientRect' ).returns( {
+				top: 50,
+				right: 150,
+				bottom: 150,
+				left: 50,
+				width: 100,
+				height: 100
+			} );
+
+			assertRect( new Rect( element ).getVisible(), {
+				top: 0,
+				right: 100,
+				bottom: 100,
+				left: 0,
+				width: 100,
+				height: 100
+			} );
+		} );
+
+		it( 'should not ignore a parent if target is an element with position: absolute ' +
+			'but parent has position: relative and overflow', () => {
+			sinon.stub( element, 'getBoundingClientRect' ).returns( {
+				top: 0,
+				right: 100,
+				bottom: 100,
+				left: 0,
+				width: 100,
+				height: 100
+			} );
+
+			element.style.position = 'absolute';
+			ancestorA.style.position = 'relative';
+			ancestorA.style.overflow = 'hidden';
+
+			sinon.stub( ancestorA, 'getBoundingClientRect' ).returns( {
+				top: 50,
+				right: 150,
+				bottom: 150,
+				left: 50,
+				width: 100,
+				height: 100
+			} );
+
+			assertRect( new Rect( element ).getVisible(), {
+				top: 50,
+				right: 100,
+				bottom: 100,
+				left: 50,
+				width: 50,
+				height: 50
+			} );
 		} );
 	} );
 
@@ -1051,6 +1278,53 @@ describe( 'Rect', () => {
 			const rects = Rect.getDomRangeRects( range );
 			expect( rects ).to.have.length( 1 );
 			assertRect( rects[ 0 ], expectedGeometry );
+		} );
+	} );
+
+	describe( 'getBoundingRect()', () => {
+		it( 'should not return a rect instance when no rectangles were given', () => {
+			expect( Rect.getBoundingRect( [] ) ).to.be.null;
+		} );
+
+		it( 'should calculate proper rectangle when multiple rectangles were given', () => {
+			const rects = [
+				new Rect( geometry ),
+				new Rect( {
+					top: 10,
+					right: 100,
+					bottom: 20,
+					left: 80,
+					width: 20,
+					height: 10
+				} ),
+				new Rect( {
+					top: 50,
+					right: 50,
+					bottom: 60,
+					left: 30,
+					width: 20,
+					height: 10
+				} )
+			];
+
+			assertRect( Rect.getBoundingRect( rects ), {
+				top: 10,
+				right: 100,
+				bottom: 60,
+				left: 20,
+				width: 80,
+				height: 50
+			} );
+		} );
+
+		it( 'should calculate proper rectangle when a single rectangles was given', () => {
+			const rectangles = new Set( [ new Rect( geometry ) ] );
+			assertRect( Rect.getBoundingRect( rectangles ), geometry );
+		} );
+
+		it( 'should return proper type', () => {
+			const rectangles = new Set( [ new Rect( geometry ) ] );
+			expect( Rect.getBoundingRect( rectangles ) ).to.be.instanceOf( Rect );
 		} );
 	} );
 } );

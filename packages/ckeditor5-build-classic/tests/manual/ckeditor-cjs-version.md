@@ -1,8 +1,8 @@
-# CKEditor 5 classic build – standard version (CommonJS `require()`)
+# CKEditor&nbsp;5 classic build – standard version (CommonJS `require()`)
 
 Just play with it.
 
-**Note:** Remember to rebuild the bundles (`npm run build`). You can also run Webpack in the watch mode:
+**Note:** Remember to rebuild the bundles by running `npm run build` in build's package directory. You can also run webpack in the watch mode:
 
 ```
 ./node_modules/.bin/webpack -w

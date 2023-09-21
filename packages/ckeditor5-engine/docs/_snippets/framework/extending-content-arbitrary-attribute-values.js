@@ -1,6 +1,6 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
- * For licensing, see LICENSE.md.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
+ * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 /* globals ClassicEditor, console, window, document */
@@ -39,7 +39,7 @@ function HandleFontSizeValue( editor ) {
 		model: {
 			key: 'fontSize'
 		},
-		view: ( modelValue, viewWriter ) => {
+		view: ( modelValue, { writer: viewWriter } ) => {
 			return viewWriter.createAttributeElement( 'span', {
 				style: `font-size:${ modelValue }px`
 			} );
@@ -53,8 +53,12 @@ ClassicEditor
 		cloudServices: CS_CONFIG,
 		extraPlugins: [ HandleFontSizeValue ],
 		toolbar: {
-			items: [ 'heading', '|', 'bold', 'italic', '|', 'fontSize' ],
-			viewportTopOffset: window.getViewportTopOffsetConfig()
+			items: [ 'heading', '|', 'bold', 'italic', '|', 'fontSize' ]
+		},
+		ui: {
+			viewportOffset: {
+				top: window.getViewportTopOffsetConfig()
+			}
 		},
 		fontSize: {
 			options: [ 10, 12, 14, 'default', 18, 20, 22 ]

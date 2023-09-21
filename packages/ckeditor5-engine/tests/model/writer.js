@@ -1,7 +1,9 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
+
+/* global console */
 
 import Model from '../../src/model/model';
 import Writer from '../../src/model/writer';
@@ -20,8 +22,12 @@ import { getNodesAndText } from '../../tests/model/_utils/utils';
 import DocumentSelection from '../../src/model/documentselection';
 import { expectToThrowCKEditorError } from '@ckeditor/ckeditor5-utils/tests/_utils/utils';
 
+import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
+
 describe( 'Writer', () => {
 	let model, doc, batch;
+
+	testUtils.createSinonSandbox();
 
 	beforeEach( () => {
 		model = new Model();
@@ -1522,8 +1528,8 @@ describe( 'Writer', () => {
 
 				const history = model.document.history;
 
-				const lastOperation = history._operations[ history._operations.length - 1 ];
-				const secondLastOperation = history._operations[ history._operations.length - 2 ];
+				const lastOperation = history.lastOperation;
+				const secondLastOperation = history.getOperation( history.version - 2 );
 
 				expect( secondLastOperation.type ).to.equal( 'marker' );
 				expect( secondLastOperation.oldRange.isEqual( markerRange ) );
@@ -1548,7 +1554,7 @@ describe( 'Writer', () => {
 
 			const history = model.document.history;
 
-			const lastOperation = history._operations[ history._operations.length - 1 ];
+			const lastOperation = history.lastOperation;
 
 			expect( lastOperation.type ).to.equal( 'merge' );
 			expect( model.document.version ).to.equal( documentVersion + 1 );
@@ -1613,8 +1619,8 @@ describe( 'Writer', () => {
 
 			const history = model.document.history;
 
-			const lastOperation = history._operations[ history._operations.length - 1 ];
-			const secondLastOperation = history._operations[ history._operations.length - 2 ];
+			const lastOperation = history.lastOperation;
+			const secondLastOperation = history.getOperation( history.version - 2 );
 
 			expect( secondLastOperation.type ).to.equal( 'marker' );
 			expect( secondLastOperation.oldRange.isEqual( markerRange ) );
@@ -1638,7 +1644,7 @@ describe( 'Writer', () => {
 
 			const history = model.document.history;
 
-			const lastOperation = history._operations[ history._operations.length - 1 ];
+			const lastOperation = history.lastOperation;
 
 			expect( lastOperation.type ).to.equal( 'move' );
 			expect( model.document.version ).to.equal( documentVersion + 1 );
@@ -1755,8 +1761,8 @@ describe( 'Writer', () => {
 
 				const history = model.document.history;
 
-				const lastOperation = history._operations[ history._operations.length - 1 ];
-				const secondLastOperation = history._operations[ history._operations.length - 2 ];
+				const lastOperation = history.lastOperation;
+				const secondLastOperation = history.getOperation( history.version - 2 );
 
 				expect( secondLastOperation.type ).to.equal( 'marker' );
 				expect( secondLastOperation.oldRange.isEqual( markerRange ) );
@@ -1781,7 +1787,7 @@ describe( 'Writer', () => {
 
 				const history = model.document.history;
 
-				const lastOperation = history._operations[ history._operations.length - 1 ];
+				const lastOperation = history.lastOperation;
 
 				expect( lastOperation.type ).to.equal( 'remove' );
 				expect( model.document.version ).to.equal( documentVersion + 1 );
@@ -2157,13 +2163,13 @@ describe( 'Writer', () => {
 		it( 'should throw if options.usingOperation is not defined', () => {
 			expectToThrowCKEditorError( () => {
 				addMarker( 'name' );
-			}, /^writer-addMarker-no-usingOperation/, model );
+			}, '^writer-addmarker-no-usingoperation', model );
 		} );
 
 		it( 'should throw if name and range is defined but options.usingOperation is not defined', () => {
 			expectToThrowCKEditorError( () => {
 				addMarker( 'name', { range } );
-			}, /^writer-addMarker-no-usingOperation/, model );
+			}, '^writer-addmarker-no-usingoperation', model );
 		} );
 
 		it( 'should add marker to the document marker collection', () => {
@@ -2215,7 +2221,7 @@ describe( 'Writer', () => {
 
 			expectToThrowCKEditorError( () => {
 				addMarker( 'name', { range: range2, usingOperation: false } );
-			}, /^writer-addMarker-marker-exists/, model );
+			}, 'writer-addmarker-marker-exists', model );
 		} );
 
 		it( 'should use operations when having set usingOperation to true', () => {
@@ -2235,13 +2241,13 @@ describe( 'Writer', () => {
 		it( 'should throw if marker with given name does not exist and range is not passed', () => {
 			expectToThrowCKEditorError( () => {
 				addMarker( 'name', { usingOperation: true } );
-			}, /^writer-addMarker-no-range/, model );
+			}, 'writer-addmarker-no-range', model );
 		} );
 
 		it( 'should throw if marker is set directly and range is not passed', () => {
 			expectToThrowCKEditorError( () => {
 				addMarker( 'name', { usingOperation: false } );
-			}, /^writer-addMarker-no-range/, model );
+			}, 'writer-addmarker-no-range', model );
 		} );
 
 		it( 'should throw when trying to use detached writer', () => {
@@ -2487,28 +2493,41 @@ describe( 'Writer', () => {
 			expectToThrowCKEditorError( () => {
 				addMarker( 'name', { range, usingOperation: false } );
 				updateMarker( 'name', {} );
-			}, /^writer-updateMarker-wrong-options/, model );
+			}, 'writer-updatemarker-wrong-options', model );
 		} );
 
 		it( 'should throw when marker provided by name does not exists', () => {
 			expectToThrowCKEditorError( () => {
 				updateMarker( 'name', { usingOperation: false } );
-			}, /^writer-updateMarker-marker-not-exists/, model );
+			}, 'writer-updatemarker-marker-not-exists', model );
 		} );
 
-		it( 'should only refresh the marker when there is no provided options to update', () => {
+		it( 'should only refresh (but warn()) the marker when there is no provided options to update', () => {
 			const marker = addMarker( 'name', { range, usingOperation: true } );
 			const spy = sinon.spy( model.markers, '_refresh' );
+			const consoleWarnStub = testUtils.sinon.stub( console, 'warn' );
 
 			updateMarker( marker );
 
 			sinon.assert.calledOnce( spy );
 			sinon.assert.calledWithExactly( spy, marker );
+			sinon.assert.calledOnce( consoleWarnStub );
+			sinon.assert.calledWithExactly( consoleWarnStub.firstCall,
+				sinon.match( /^writer-updatemarker-reconvert-using-editingcontroller/ ),
+				{ markerName: 'name' },
+				sinon.match.string // Link to the documentation
+			);
 
 			updateMarker( 'name' );
 
 			sinon.assert.calledTwice( spy );
 			sinon.assert.calledWithExactly( spy.secondCall, marker );
+			sinon.assert.calledTwice( consoleWarnStub );
+			sinon.assert.calledWithExactly( consoleWarnStub.secondCall,
+				sinon.match( /^writer-updatemarker-reconvert-using-editingcontroller/ ),
+				{ markerName: 'name' },
+				sinon.match.string // Link to the documentation
+			);
 		} );
 
 		it( 'should throw when trying to use detached writer', () => {
@@ -2540,7 +2559,7 @@ describe( 'Writer', () => {
 		it( 'should throw when trying to remove non existing marker', () => {
 			expectToThrowCKEditorError( () => {
 				removeMarker( 'name' );
-			}, /^writer-removeMarker-no-marker/, model );
+			}, 'writer-removemarker-no-marker', model );
 		} );
 
 		it( 'should throw when trying to use detached writer', () => {
@@ -2573,6 +2592,151 @@ describe( 'Writer', () => {
 			sinon.assert.calledOnce( spy );
 			expect( spy.firstCall.args[ 1 ][ 0 ].type ).to.equal( 'marker' );
 			expect( model.markers.get( 'name' ) ).to.be.null;
+		} );
+	} );
+
+	describe( 'addRoot()', () => {
+		it( 'should add an empty, attached root to the model and return it', () => {
+			model.change( writer => {
+				const root = writer.addRoot( 'new' );
+
+				expect( model.document.getRoot( 'new' ) ).to.equal( root );
+				expect( root.isAttached() ).to.be.true;
+			} );
+		} );
+
+		it( 'should add a root with specified element name', () => {
+			model.change( writer => {
+				const root = writer.addRoot( 'new', 'div' );
+
+				expect( root.name ).to.equal( 'div' );
+			} );
+		} );
+
+		it( 'should re-attach the root if it was previously detached', () => {
+			model.change( writer => {
+				writer.addRoot( 'new' );
+				writer.detachRoot( 'new' );
+			} );
+
+			model.change( writer => {
+				const root = writer.addRoot( 'new' );
+
+				expect( root.isAttached() ).to.be.true;
+			} );
+		} );
+
+		it( 'should throw when root with such name already exists and is attached', () => {
+			model.change( writer => {
+				writer.addRoot( 'new' );
+
+				expectToThrowCKEditorError( () => {
+					writer.addRoot( 'new' );
+				}, /^writer-addroot-root-exists/, model );
+			} );
+		} );
+
+		it( 'should use RootOperation to modify the model', () => {
+			model.change( writer => {
+				const version = model.document.version;
+
+				writer.addRoot( 'new', 'div' );
+
+				const op = model.document.history.getOperation( version );
+
+				expect( op.type ).to.equal( 'addRoot' );
+				expect( op.rootName ).to.equal( 'new' );
+				expect( op.elementName ).to.equal( 'div' );
+				expect( op.baseVersion ).to.equal( version );
+				expect( op.isAdd ).to.equal( true );
+			} );
+		} );
+	} );
+
+	describe( 'detachRoot()', () => {
+		it( 'should detach the root from the model and remove all children, attributes and markers from it', () => {
+			let root, p;
+
+			model.change( writer => {
+				root = writer.addRoot( 'new' );
+				p = writer.createElement( 'paragraph' );
+				writer.insert( p, root, 0 );
+				writer.setAttribute( 'foo', true, root );
+				writer.setAttribute( 'bar', false, root );
+				writer.addMarker( 'newMarker', { usingOperation: true, affectsData: true, range: writer.createRangeIn( root ) } );
+			} );
+
+			model.change( writer => {
+				writer.detachRoot( root );
+			} );
+
+			expect( root.isAttached() ).to.be.false;
+			expect( root.isEmpty );
+			expect( Array.from( root.getAttributes() ).length ).to.equal( 0 );
+			expect( p.parent.rootName ).to.equal( '$graveyard' );
+			expect( model.markers.get( 'newMarker' ) ).to.be.null;
+		} );
+
+		it( 'should not remove markers when root in range is different than the detached root', () => {
+			let root;
+
+			model.change( writer => {
+				root = writer.addRoot( 'new' );
+				const otherRoot = writer.addRoot( 'otherRoot' );
+				writer.addMarker( 'newMarker', { usingOperation: true, affectsData: true, range: writer.createRangeIn( otherRoot ) } );
+			} );
+
+			model.change( writer => {
+				writer.detachRoot( root );
+			} );
+
+			expect( model.markers.get( 'newMarker' ) ).not.to.be.null;
+		} );
+
+		it( 'should accept root name as a parameter', () => {
+			model.change( writer => {
+				writer.addRoot( 'new' );
+				writer.detachRoot( 'new' );
+			} );
+
+			expect( model.document.getRoot( 'new' ).isAttached() ).to.be.false;
+		} );
+
+		it( 'should throw when trying to detach a non-existing root', () => {
+			model.change( writer => {
+				expectToThrowCKEditorError( () => {
+					writer.detachRoot( 'foo' );
+				}, /^writer-detachroot-no-root/, model );
+			} );
+		} );
+
+		it( 'should throw when trying to detach an already detached root', () => {
+			model.change( writer => {
+				writer.addRoot( 'foo' );
+				writer.detachRoot( 'foo' );
+
+				expectToThrowCKEditorError( () => {
+					writer.detachRoot( 'foo' );
+				}, /^writer-detachroot-no-root/, model );
+			} );
+		} );
+
+		it( 'should use RootOperation to modify the model', () => {
+			model.change( writer => {
+				writer.addRoot( 'new', 'div' );
+
+				const version = model.document.version;
+
+				writer.detachRoot( 'new' );
+
+				const op = model.document.history.getOperation( version );
+
+				expect( op.type ).to.equal( 'detachRoot' );
+				expect( op.rootName ).to.equal( 'new' );
+				expect( op.elementName ).to.equal( 'div' );
+				expect( op.baseVersion ).to.equal( version );
+				expect( op.isAdd ).to.equal( false );
+			} );
 		} );
 	} );
 

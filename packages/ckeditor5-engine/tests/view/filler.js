@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -10,7 +10,8 @@ import {
 	INLINE_FILLER,
 	startsWithFiller,
 	isInlineFiller,
-	getDataWithoutFiller
+	getDataWithoutFiller,
+	MARKED_NBSP_FILLER
 } from '../../src/view/filler';
 
 describe( 'filler', () => {
@@ -31,6 +32,18 @@ describe( 'filler', () => {
 			const node = document.createTextNode( INLINE_FILLER + 'foo' );
 
 			expect( startsWithFiller( node ) ).to.be.true;
+		} );
+
+		it( 'should be true for text which contains only filler', () => {
+			const str = `${ INLINE_FILLER }`;
+
+			expect( startsWithFiller( str ) ).to.be.true;
+		} );
+
+		it( 'should be true for text which starts with filler', () => {
+			const str = `${ INLINE_FILLER }foo`;
+
+			expect( startsWithFiller( str ) ).to.be.true;
 		} );
 
 		it( 'should be false for element', () => {
@@ -74,8 +87,26 @@ describe( 'filler', () => {
 			expect( dataWithoutFiller ).to.equals( 'foo' );
 		} );
 
+		it( 'should return text without filler', () => {
+			const str = `${ INLINE_FILLER }foo`;
+
+			const dataWithoutFiller = getDataWithoutFiller( str );
+
+			expect( dataWithoutFiller.length ).to.equals( 3 );
+			expect( dataWithoutFiller ).to.equals( 'foo' );
+		} );
+
 		it( 'should return the same data for data without filler', () => {
 			const node = document.createTextNode( 'foo' );
+
+			const dataWithoutFiller = getDataWithoutFiller( node );
+
+			expect( dataWithoutFiller.length ).to.equals( 3 );
+			expect( dataWithoutFiller ).to.equals( 'foo' );
+		} );
+
+		it( 'should return the same data for text without filler', () => {
+			const node = 'foo';
 
 			const dataWithoutFiller = getDataWithoutFiller( node );
 
@@ -117,6 +148,32 @@ describe( 'filler', () => {
 			expect( isInlineFiller( node ) ).to.be.true;
 
 			document.body.removeChild( iframe );
+		} );
+	} );
+
+	describe( 'MARKED_NBSP_FILLER', () => {
+		afterEach( () => {
+			sinon.restore();
+		} );
+
+		it( 'should return node with correct HTML', () => {
+			const node = MARKED_NBSP_FILLER( document ); // eslint-disable-line new-cap
+
+			expect( node.outerHTML ).to.equal( '<span data-cke-filler="true">&nbsp;</span>' );
+		} );
+
+		it( 'should use innerText setter instead of innerHTML', () => {
+			const el = document.createElement( 'span' );
+			const innerHTMLSpy = sinon.spy( el, 'innerHTML', [ 'set' ] );
+			const innerTextSpy = sinon.spy( el, 'innerText', [ 'set' ] );
+			const createElementStub = sinon.stub( document, 'createElement' );
+			createElementStub.withArgs( 'span' ).returns( el );
+
+			MARKED_NBSP_FILLER( document ); // eslint-disable-line new-cap
+
+			sinon.assert.calledOnce( createElementStub );
+			sinon.assert.notCalled( innerHTMLSpy.set );
+			sinon.assert.calledOnce( innerTextSpy.set );
 		} );
 	} );
 } );

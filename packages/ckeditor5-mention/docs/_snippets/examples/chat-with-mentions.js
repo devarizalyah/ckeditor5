@@ -1,15 +1,16 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
-/* globals console, window, document */
+/* globals console, window, document, setTimeout */
 
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic/src/ckeditor';
-import Underline from '@ckeditor/ckeditor5-basic-styles/src/underline';
-import Strikethrough from '@ckeditor/ckeditor5-basic-styles/src/strikethrough';
-import Mention from '@ckeditor/ckeditor5-mention/src/mention';
+import { Underline, Strikethrough } from '@ckeditor/ckeditor5-basic-styles';
+import { Mention } from '@ckeditor/ckeditor5-mention';
 import { CS_CONFIG } from '@ckeditor/ckeditor5-cloud-services/tests/_utils/cloud-services-config';
+
+// Umberto combines all `packages/*/docs` into the `docs/` directory. The import path must be valid after merging all directories.
+import ClassicEditor from '../build-classic';
 
 ClassicEditor
 	.create( document.querySelector( '.chat__editor' ), {
@@ -17,9 +18,16 @@ ClassicEditor
 		extraPlugins: [ Mention, MentionLinks, Underline, Strikethrough ],
 		toolbar: {
 			items: [
-				'bold', 'italic', 'underline', 'strikethrough', '|', 'link', '|', 'undo', 'redo'
-			],
-			viewportTopOffset: window.getViewportTopOffsetConfig()
+				'undo', 'redo', '|', 'heading',
+				'|', 'bold', 'italic', 'underline', 'strikethrough',
+				'|', 'link', 'uploadImage', 'insertTable', 'mediaEmbed',
+				'|', 'bulletedList', 'numberedList', 'outdent', 'indent'
+			]
+		},
+		ui: {
+			viewportOffset: {
+				top: window.getViewportTopOffsetConfig()
+			}
 		},
 		mention: {
 			feeds: [
@@ -68,11 +76,31 @@ ClassicEditor
 		}
 	} )
 	.then( editor => {
+		const editingView = editor.editing.view;
+		const rootElement = editingView.document.getRoot();
+
 		window.editor = editor;
 
 		// Clone the first message in the chat when "Send" is clicked, fill it with new data
 		// and append to the chat list.
 		document.querySelector( '.chat-send' ).addEventListener( 'click', () => {
+			const message = editor.getData();
+
+			if ( !message ) {
+				editingView.change( writer => {
+					writer.addClass( 'highlighted', rootElement );
+					editingView.focus();
+				} );
+
+				setTimeout( () => {
+					editingView.change( writer => {
+						writer.removeClass( 'highlighted', rootElement );
+					} );
+				}, 650 );
+
+				return;
+			}
+
 			const clone = document.querySelector( '.chat__posts li' ).cloneNode( true );
 
 			clone.classList.add( 'new-post' );
@@ -85,9 +113,12 @@ ClassicEditor
 			mailtoUser.href = 'mailto:info@cksource.com';
 
 			clone.querySelector( '.chat__posts__post__time' ).textContent = 'just now';
-			clone.querySelector( '.chat__posts__post__content' ).innerHTML = editor.getData();
+			clone.querySelector( '.chat__posts__post__content' ).innerHTML = message;
 
 			document.querySelector( '.chat__posts' ).appendChild( clone );
+
+			editor.setData( '' );
+			editingView.focus();
 		} );
 	} )
 	.catch( err => {
@@ -127,7 +158,7 @@ function MentionLinks( editor ) {
 	// element.
 	editor.conversion.for( 'downcast' ).attributeToElement( {
 		model: 'mention',
-		view: ( modelAttributeValue, viewWriter ) => {
+		view: ( modelAttributeValue, { writer } ) => {
 			// Do not convert empty attributes (lack of value means no mention).
 			if ( !modelAttributeValue ) {
 				return;
@@ -142,7 +173,7 @@ function MentionLinks( editor ) {
 				href = `https://example.com/social/${ modelAttributeValue.id.slice( 1 ) }`;
 			}
 
-			return viewWriter.createAttributeElement( 'a', {
+			return writer.createAttributeElement( 'a', {
 				class: 'mention',
 				'data-mention': modelAttributeValue.id,
 				href

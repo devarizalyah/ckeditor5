@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -44,7 +44,17 @@ describe( 'Document', () => {
 				baseVersion: 0,
 				isDocumentOperation: true,
 				_execute: sinon.stub().returns( data ),
-				_validate: () => {}
+				_validate: () => {},
+				toJSON() {
+					// This method creates only a shallow copy, all nested objects should be defined separately.
+					// See https://github.com/ckeditor/ckeditor5-engine/issues/1477.
+					const json = Object.assign( {}, this );
+
+					// Remove reference to the parent `Batch` to avoid circular dependencies.
+					delete json.batch;
+
+					return json;
+				}
 			};
 
 			batch = new Batch();
@@ -55,7 +65,7 @@ describe( 'Document', () => {
 			model.applyOperation( operation );
 
 			expect( doc.version ).to.equal( 1 );
-			expect( doc.history._operations.length ).to.equal( 1 );
+			expect( doc.history.getOperations().length ).to.equal( 1 );
 			sinon.assert.calledOnce( operation._execute );
 		} );
 
@@ -65,7 +75,7 @@ describe( 'Document', () => {
 			model.applyOperation( operation );
 
 			expect( doc.version ).to.equal( 0 );
-			expect( doc.history._operations.length ).to.equal( 0 );
+			expect( doc.history.getOperations().length ).to.equal( 0 );
 			sinon.assert.calledOnce( operation._execute );
 		} );
 
@@ -80,34 +90,123 @@ describe( 'Document', () => {
 
 		it( 'should throw an error on the operation base version and the document version is different', () => {
 			const operation = {
+				type: 't',
 				baseVersion: 1,
 				isDocumentOperation: true,
-				_execute: () => {}
+				_execute: sinon.stub().returns( data ),
+				_validate: () => {}
 			};
 
 			expectToThrowCKEditorError( () => {
 				model.applyOperation( operation );
-			}, /^model-document-applyOperation-wrong-version/, model );
+			}, 'model-document-history-addoperation-incorrect-version', model, {
+				operation,
+				historyVersion: 0
+			} );
+		} );
+	} );
+
+	describe( '#version', () => {
+		it( 'should equal to document.history.version', () => {
+			model.document.history.version = 20;
+
+			expect( model.document.version ).to.equal( 20 );
+		} );
+
+		it( 'should set document.history.version', () => {
+			model.document.version = 20;
+
+			expect( model.document.history.version ).to.equal( 20 );
 		} );
 	} );
 
 	describe( 'getRootNames()', () => {
-		it( 'should return empty iterator if no roots exist', () => {
+		it( 'should return empty array if no roots exist', () => {
 			expect( count( doc.getRootNames() ) ).to.equal( 0 );
 		} );
 
-		it( 'should return an iterator of all roots without the graveyard', () => {
+		it( 'should return array with all roots without the graveyard', () => {
 			doc.createRoot( '$root', 'a' );
 			doc.createRoot( '$root', 'b' );
 
-			expect( Array.from( doc.getRootNames() ) ).to.deep.equal( [ 'a', 'b' ] );
+			expect( doc.getRootNames() ).to.deep.equal( [ 'a', 'b' ] );
+		} );
+
+		it( 'should return only attached roots', () => {
+			doc.createRoot( '$root', 'a' );
+			const rootB = doc.createRoot( '$root', 'b' );
+
+			rootB._isAttached = false;
+
+			expect( doc.getRootNames() ).to.deep.equal( [ 'a' ] );
+		} );
+
+		it( 'should return detached roots when `includeDetached` flag is set to `true`', () => {
+			doc.createRoot( '$root', 'a' );
+			const rootB = doc.createRoot( '$root', 'b' );
+
+			rootB._isAttached = false;
+
+			expect( doc.getRootNames( true ) ).to.deep.equal( [ 'a', 'b' ] );
+		} );
+
+		it( 'should not return non-loaded roots', () => {
+			doc.createRoot( '$root', 'a' );
+			const rootB = doc.createRoot( '$root', 'b' );
+
+			rootB._isLoaded = false;
+
+			expect( doc.getRootNames() ).to.deep.equal( [ 'a' ] );
+			expect( doc.getRootNames( true ) ).to.deep.equal( [ 'a' ] );
+		} );
+	} );
+
+	describe( 'getRoots()', () => {
+		it( 'should return empty iterator if no roots exist', () => {
+			expect( count( doc.getRoots() ) ).to.equal( 0 );
+		} );
+
+		it( 'should return an iterator of all roots without the graveyard', () => {
+			const rootA = doc.createRoot( '$root', 'a' );
+			const rootB = doc.createRoot( '$root', 'b' );
+
+			expect( doc.getRoots() ).to.deep.equal( [ rootA, rootB ] );
+		} );
+
+		it( 'should return only attached roots', () => {
+			const rootA = doc.createRoot( '$root', 'a' );
+			const rootB = doc.createRoot( '$root', 'b' );
+
+			rootB._isAttached = false;
+
+			expect( doc.getRoots() ).to.deep.equal( [ rootA ] );
+		} );
+
+		it( 'should return detached roots when `includeDetached` flag is set to `true`', () => {
+			const rootA = doc.createRoot( '$root', 'a' );
+			const rootB = doc.createRoot( '$root', 'b' );
+
+			rootB._isAttached = false;
+
+			expect( doc.getRoots( true ) ).to.deep.equal( [ rootA, rootB ] );
+		} );
+
+		it( 'should not return non-loaded roots', () => {
+			const rootA = doc.createRoot( '$root', 'a' );
+			const rootB = doc.createRoot( '$root', 'b' );
+
+			rootA._isLoaded = false;
+
+			expect( doc.getRoots() ).to.deep.equal( [ rootB ] );
+			expect( doc.getRoots( true ) ).to.deep.equal( [ rootB ] );
 		} );
 	} );
 
 	describe( 'createRoot()', () => {
-		it( 'should create a new RootElement with default element and root names, add it to roots map and return it', () => {
+		it( 'should create a new RootElement, attached, with default element and root names, add it to roots map and return it', () => {
 			const root = doc.createRoot();
 
+			expect( root.isAttached() ).to.be.true;
 			expect( doc.roots.length ).to.equal( 2 );
 			expect( root ).to.be.instanceof( RootElement );
 			expect( root.maxOffset ).to.equal( 0 );
@@ -115,9 +214,10 @@ describe( 'Document', () => {
 			expect( root ).to.have.property( 'rootName', 'main' );
 		} );
 
-		it( 'should create a new RootElement with custom element and root names, add it to roots map and return it', () => {
+		it( 'should create a new RootElement, attached, with custom element and root names, add it to roots map and return it', () => {
 			const root = doc.createRoot( 'customElementName', 'customRootName' );
 
+			expect( root.isAttached() ).to.be.true;
 			expect( doc.roots.length ).to.equal( 2 );
 			expect( root ).to.be.instanceof( RootElement );
 			expect( root.maxOffset ).to.equal( 0 );
@@ -130,7 +230,7 @@ describe( 'Document', () => {
 
 			expectToThrowCKEditorError( () => {
 				doc.createRoot( '$root', 'rootName' );
-			}, /model-document-createRoot-name-exists/, model );
+			}, 'model-document-createroot-name-exists', model );
 		} );
 	} );
 
@@ -150,6 +250,14 @@ describe( 'Document', () => {
 		it( 'should return null when trying to get non-existent root', () => {
 			expect( doc.getRoot( 'not-existing' ) ).to.null;
 		} );
+
+		it( 'should return a detached root', () => {
+			const root = doc.createRoot( '$root', 'a' );
+
+			root._isAttached = false;
+
+			expect( doc.getRoot( 'a' ) ).to.equal( root );
+		} );
 	} );
 
 	describe( '_getDefaultRoot()', () => {
@@ -164,6 +272,33 @@ describe( 'Document', () => {
 
 			expect( doc._getDefaultRoot() ).to.equal( rootA );
 		} );
+	} );
+
+	it( 'should automatically remove elements or markers when added to a detached root', () => {
+		let root, p;
+
+		model.change( writer => {
+			root = writer.addRoot( 'new' );
+			writer.detachRoot( 'new' );
+		} );
+
+		model.change( writer => {
+			p = writer.createElement( 'paragraph' );
+			writer.insert( p, root, 0 );
+		} );
+
+		expect( root.isEmpty ).to.be.true;
+		expect( p.parent.rootName ).to.equal( '$graveyard' );
+
+		model.change( writer => {
+			writer.addMarker( 'newMarker', {
+				usingOperation: true,
+				affectsData: true,
+				range: writer.createRangeIn( root )
+			} );
+		} );
+
+		expect( model.markers.get( 'newMarker' ) ).to.be.null;
 	} );
 
 	describe( 'destroy()', () => {
@@ -454,7 +589,7 @@ describe( 'Document', () => {
 			sinon.assert.notCalled( spy );
 		} );
 
-		it( 'should be fired when updated marker affects data', () => {
+		it( 'should be fired when marker changes affecting data', () => {
 			const root = doc.createRoot();
 			root._appendChild( new Text( 'foo' ) );
 
@@ -462,21 +597,17 @@ describe( 'Document', () => {
 			const changeDataSpy = sandbox.spy();
 			const changeSpy = sandbox.spy();
 
+			model.change( writer => {
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 4 ) );
+				writer.addMarker( 'name', { range, usingOperation: true } );
+			} );
+
 			doc.on( 'change:data', changeDataSpy );
 			doc.on( 'change', changeSpy );
 
 			model.change( writer => {
-				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 4 ) );
-				writer.addMarker( 'name', { range, usingOperation: false } );
-			} );
-
-			sinon.assert.calledOnce( changeSpy );
-			sinon.assert.notCalled( changeDataSpy );
-
-			sandbox.resetHistory();
-
-			model.change( writer => {
-				writer.updateMarker( 'name', { affectsData: true } );
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 3 ) );
+				writer.updateMarker( 'name', { range, affectsData: true } );
 			} );
 
 			sinon.assert.calledOnce( changeSpy );
@@ -485,10 +616,130 @@ describe( 'Document', () => {
 			sandbox.resetHistory();
 
 			model.change( writer => {
-				writer.updateMarker( 'name', { affectsData: false } );
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 4 ) );
+				writer.updateMarker( 'name', { affectsData: false, range } );
 			} );
 
 			sinon.assert.calledOnce( changeSpy );
+			sinon.assert.calledOnce( changeDataSpy );
+		} );
+
+		it( 'should not be fired when marker does not affect data', () => {
+			const root = doc.createRoot();
+			root._appendChild( new Text( 'foo' ) );
+
+			const sandbox = sinon.createSandbox();
+			const changeDataSpy = sandbox.spy();
+			const changeSpy = sandbox.spy();
+
+			model.change( writer => {
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 4 ) );
+				writer.addMarker( 'name', { range, usingOperation: false, affectsData: false } );
+			} );
+
+			doc.on( 'change:data', changeDataSpy );
+			doc.on( 'change', changeSpy );
+
+			model.change( writer => {
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 3 ) );
+				writer.updateMarker( 'name', { range } );
+			} );
+
+			sinon.assert.calledOnce( changeSpy );
+			sinon.assert.notCalled( changeDataSpy );
+		} );
+
+		it( 'should not be fired when the marker range does not change', () => {
+			const root = doc.createRoot();
+			root._appendChild( new Text( 'foo' ) );
+
+			const changeDataSpy = sinon.spy();
+
+			model.change( writer => {
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 4 ) );
+				writer.addMarker( 'name', { range, usingOperation: true, affectsData: true } );
+			} );
+
+			doc.on( 'change:data', changeDataSpy );
+
+			model.change( writer => {
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 4 ) );
+				writer.updateMarker( 'name', { range } );
+			} );
+
+			sinon.assert.notCalled( changeDataSpy );
+		} );
+
+		// There are no strong preferences here.
+		// This case is a bit artificial so perhaps it's better to stay on the safe side and fire the change:data event
+		// even when the marker is empty. But if there is a problem with it, this behavior can be easily changed.
+		it( 'should be fired when the marker updates range from null to null', () => {
+			const root = doc.createRoot();
+			root._appendChild( new Text( 'foo' ) );
+
+			const changeDataSpy = sinon.spy();
+
+			model.change( writer => {
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 4 ) );
+				writer.addMarker( 'name', { range, usingOperation: true, affectsData: true } );
+			} );
+
+			model.change( writer => {
+				writer.updateMarker( 'name', { range: null, usingOperation: true } );
+			} );
+
+			doc.on( 'change:data', changeDataSpy );
+
+			model.change( writer => {
+				writer.updateMarker( 'name', { range: null, usingOperation: true } );
+			} );
+
+			sinon.assert.notCalled( changeDataSpy );
+		} );
+
+		it( 'should be fired when the marker updates range from non-null range to null', () => {
+			const root = doc.createRoot();
+			root._appendChild( new Text( 'foo' ) );
+
+			const changeDataSpy = sinon.spy();
+
+			model.change( writer => {
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 4 ) );
+				writer.addMarker( 'name', { range, usingOperation: true, affectsData: true } );
+			} );
+
+			doc.on( 'change:data', changeDataSpy );
+
+			model.change( writer => {
+				writer.updateMarker( 'name', { range: null, usingOperation: true } );
+			} );
+
+			sinon.assert.notCalled( changeDataSpy );
+		} );
+
+		it( 'should be fired when the marker updates range from null to a non-null range', () => {
+			const root = doc.createRoot();
+			root._appendChild( new Text( 'foo' ) );
+
+			const changeDataSpy = sinon.spy();
+
+			model.change( writer => {
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 4 ) );
+				writer.addMarker( 'name', { range, usingOperation: true, affectsData: true } );
+			} );
+
+			model.change( writer => {
+				writer.updateMarker( 'name', { range: null, usingOperation: true } );
+			} );
+
+			doc.on( 'change:data', changeDataSpy );
+
+			model.change( writer => {
+				const range = writer.createRange( writer.createPositionAt( root, 2 ), writer.createPositionAt( root, 4 ) );
+
+				writer.updateMarker( 'name', { range, usingOperation: true } );
+			} );
+
 			sinon.assert.notCalled( changeDataSpy );
 		} );
 	} );

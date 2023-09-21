@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -29,8 +29,9 @@ import Mapper from '../../src/conversion/mapper';
 import ViewSelection from '../../src/view/selection';
 import ViewRange from '../../src/view/range';
 import { StylesProcessor } from '../../src/view/stylesmap';
+import Writer from '../../src/model/writer';
 
-/* globals console */
+import toArray from '@ckeditor/ckeditor5-utils/src/toarray';
 
 describe( 'UpcastHelpers', () => {
 	let upcastDispatcher, model, schema, upcastHelpers, viewDocument;
@@ -108,8 +109,8 @@ describe( 'UpcastHelpers', () => {
 					name: 'p',
 					classes: 'heading'
 				},
-				model: ( viewElement, modelWriter ) => {
-					return modelWriter.createElement( 'heading', { level: viewElement.getAttribute( 'data-level' ) } );
+				model: ( viewElement, { writer } ) => {
+					return writer.createElement( 'heading', { level: viewElement.getAttribute( 'data-level' ) } );
 				}
 			} );
 
@@ -122,7 +123,8 @@ describe( 'UpcastHelpers', () => {
 
 		it( 'config.view is not set - should fire conversion for every element', () => {
 			upcastHelpers.elementToElement( {
-				model: 'paragraph'
+				model: 'paragraph',
+				view: /.+/
 			} );
 
 			expectResult( new ViewContainerElement( viewDocument, 'p' ), '<paragraph></paragraph>' );
@@ -249,9 +251,12 @@ describe( 'UpcastHelpers', () => {
 				},
 				model: {
 					key: 'fontSize',
-					value: viewElement => {
+					value: ( viewElement, conversionApi ) => {
 						const fontSize = viewElement.getStyle( 'font-size' );
 						const value = fontSize.substr( 0, fontSize.length - 2 );
+
+						// To ensure conversion API is provided.
+						expect( conversionApi.writer ).to.instanceof( Writer );
 
 						if ( value <= 10 ) {
 							return 'small';
@@ -328,7 +333,7 @@ describe( 'UpcastHelpers', () => {
 			);
 		} );
 
-		it( 'should consume element only when only is name specified', () => {
+		it( 'should allow to convert an attribute if an element was already consumed', () => {
 			upcastHelpers.elementToAttribute( {
 				model: 'bold',
 				view: { name: 'strong' }
@@ -347,6 +352,29 @@ describe( 'UpcastHelpers', () => {
 			expectResult(
 				new ViewAttributeElement( viewDocument, 'strong', { class: 'foo' }, new ViewText( viewDocument, 'foo' ) ),
 				'<$text attribB="true" bold="true">foo</$text>'
+			);
+		} );
+
+		it( 'should consume an element even if only attributes were converted', () => {
+			upcastHelpers.elementToAttribute( {
+				model: 'attribA',
+				view: { name: 'strong', classes: 'foo' }
+			} );
+
+			upcastHelpers.elementToAttribute( {
+				model: 'attribB',
+				view: { name: 'strong', classes: 'bar' }
+			} );
+
+			// This one should not get converted because element itself is already consumed.
+			upcastHelpers.elementToAttribute( {
+				model: 'bold',
+				view: { name: 'strong' }
+			} );
+
+			expectResult(
+				new ViewAttributeElement( viewDocument, 'strong', { class: 'foo bar' }, new ViewText( viewDocument, 'foo' ) ),
+				'<$text attribA="true" attribB="true">foo</$text>'
 			);
 		} );
 
@@ -369,13 +397,132 @@ describe( 'UpcastHelpers', () => {
 				'<paragraph><$text bold="true">Foo</$text></paragraph>'
 			);
 		} );
+
+		// #8921.
+		describe( 'overwriting attributes while converting nested elements', () => {
+			beforeEach( () => {
+				schema.extend( '$text', {
+					allowAttributes: [ 'fontSize', 'fontColor' ]
+				} );
+
+				upcastHelpers.elementToAttribute( {
+					view: {
+						name: 'span',
+						styles: {
+							'font-size': /[\s\S]+/
+						}
+					},
+					model: {
+						key: 'fontSize',
+						value: viewElement => {
+							const fontSize = viewElement.getStyle( 'font-size' );
+							const value = fontSize.substr( 0, fontSize.length - 2 );
+
+							return Number( value );
+						}
+					}
+				} );
+
+				upcastHelpers.elementToAttribute( {
+					view: {
+						name: 'span',
+						styles: {
+							'color': /#[a-f0-9]{6}/
+						}
+					},
+					model: {
+						key: 'fontColor',
+						value: viewElement => viewElement.getStyle( 'color' )
+					}
+				} );
+			} );
+
+			it( 'should not overwrite attributes if nested elements have the same attribute but different values', () => {
+				const viewElement = viewParse( '<span style="font-size:9px"><span style="font-size:11px">Bar</span></span>' );
+
+				expectResult(
+					viewElement,
+					'<$text fontSize="11">Bar</$text>'
+				);
+			} );
+
+			it( 'should convert text before the nested duplicated attribute with the most outer value', () => {
+				const viewElement = viewParse( '<span style="font-size:9px">Foo<span style="font-size:11px">Bar</span></span>' );
+
+				expectResult(
+					viewElement,
+					'<$text fontSize="9">Foo</$text><$text fontSize="11">Bar</$text>'
+				);
+			} );
+
+			it( 'should convert text after the nested duplicated attribute with the most outer values', () => {
+				const viewElement = viewParse( '<span style="font-size:9px"><span style="font-size:11px">Bar</span>Bom</span>' );
+
+				expectResult(
+					viewElement,
+					'<$text fontSize="11">Bar</$text><$text fontSize="9">Bom</$text>'
+				);
+			} );
+
+			it( 'should convert texts before and after the nested duplicated attribute with the most outer value', () => {
+				const viewElement = viewParse( '<span style="font-size:9px">Foo<span style="font-size:11px">Bar</span>Bom</span>' );
+
+				expectResult(
+					viewElement,
+					'<$text fontSize="9">Foo</$text><$text fontSize="11">Bar</$text><$text fontSize="9">Bom</$text>'
+				);
+			} );
+
+			it( 'should work with multiple duplicated attributes', () => {
+				const viewElement = viewParse(
+					'<span style="font-size:9px;color: #0000ff"><span style="font-size:11px;color: #ff0000">Bar</span></span>'
+				);
+
+				expectResult(
+					viewElement,
+					'<$text fontColor="#ff0000" fontSize="11">Bar</$text>'
+				);
+			} );
+
+			it( 'should convert non-duplicated attributes from the most outer element', () => {
+				const viewElement = viewParse(
+					'<span style="font-size:9px;color: #0000ff"><span style="font-size:11px;">Bar</span></span>'
+				);
+
+				expectResult(
+					viewElement,
+					'<$text fontColor="#0000ff" fontSize="11">Bar</$text>'
+				);
+			} );
+
+			// See https://github.com/ckeditor/ckeditor5/pull/9249#issuecomment-813935851
+			it( 'should consume both elements even if the attribute from the most inner element will be used', () => {
+				upcastDispatcher.on( 'element:span', ( evt, data, conversionApi ) => {
+					const viewItem = data.viewItem;
+					const wasConsumed = conversionApi.consumable.consume( viewItem, {
+						styles: [ 'font-size' ]
+					} );
+
+					expect( wasConsumed, `span[fontSize=${ viewItem.getStyle( 'font-size' ) }]` ).to.equal( false );
+				}, { priority: 'lowest' } );
+
+				const viewElement = viewParse(
+					'<span style="font-size:9px;"><span style="font-size:11px;">Bar</span></span>'
+				);
+
+				expectResult(
+					viewElement,
+					'<$text fontSize="11">Bar</$text>'
+				);
+			} );
+		} );
 	} );
 
 	describe( 'attributeToAttribute()', () => {
 		beforeEach( () => {
-			upcastHelpers.elementToElement( { view: 'img', model: 'image' } );
+			upcastHelpers.elementToElement( { view: 'img', model: 'imageBlock' } );
 
-			schema.register( 'image', {
+			schema.register( 'imageBlock', {
 				inheritAllFrom: '$block'
 			} );
 		} );
@@ -385,7 +532,7 @@ describe( 'UpcastHelpers', () => {
 		} );
 
 		it( 'config.view is a string', () => {
-			schema.extend( 'image', {
+			schema.extend( 'imageBlock', {
 				allowAttributes: [ 'source' ]
 			} );
 
@@ -393,12 +540,12 @@ describe( 'UpcastHelpers', () => {
 
 			expectResult(
 				new ViewAttributeElement( viewDocument, 'img', { src: 'foo.jpg' } ),
-				'<image source="foo.jpg"></image>'
+				'<imageBlock source="foo.jpg"></imageBlock>'
 			);
 		} );
 
 		it( 'config.view has only key set', () => {
-			schema.extend( 'image', {
+			schema.extend( 'imageBlock', {
 				allowAttributes: [ 'source' ]
 			} );
 
@@ -406,25 +553,25 @@ describe( 'UpcastHelpers', () => {
 
 			expectResult(
 				new ViewAttributeElement( viewDocument, 'img', { src: 'foo.jpg' } ),
-				'<image source="foo.jpg"></image>'
+				'<imageBlock source="foo.jpg"></imageBlock>'
 			);
 		} );
 
 		it( 'config.view has only key and name set', () => {
-			schema.extend( 'image', {
+			schema.extend( 'imageBlock', {
 				allowAttributes: [ 'source' ]
 			} );
 
-			upcastHelpers.attributeToAttribute( { view: { name: 'img', key: 'src' }, model: { name: 'image', key: 'source' } } );
+			upcastHelpers.attributeToAttribute( { view: { name: 'img', key: 'src' }, model: { name: 'imageBlock', key: 'source' } } );
 
 			expectResult(
 				new ViewAttributeElement( viewDocument, 'img', { src: 'foo.jpg' } ),
-				'<image source="foo.jpg"></image>'
+				'<imageBlock source="foo.jpg"></imageBlock>'
 			);
 		} );
 
 		it( 'can be overwritten using converterPriority', () => {
-			schema.extend( 'image', {
+			schema.extend( 'imageBlock', {
 				allowAttributes: [ 'src', 'source' ]
 			} );
 
@@ -433,12 +580,12 @@ describe( 'UpcastHelpers', () => {
 
 			expectResult(
 				new ViewAttributeElement( viewDocument, 'img', { src: 'foo.jpg' } ),
-				'<image source="foo.jpg"></image>'
+				'<imageBlock source="foo.jpg"></imageBlock>'
 			);
 		} );
 
 		it( 'config.view has value set', () => {
-			schema.extend( 'image', {
+			schema.extend( 'imageBlock', {
 				allowAttributes: [ 'styled' ]
 			} );
 
@@ -452,12 +599,12 @@ describe( 'UpcastHelpers', () => {
 
 			expectResult(
 				new ViewAttributeElement( viewDocument, 'img', { 'data-style': 'dark' } ),
-				'<image styled="dark"></image>'
+				'<imageBlock styled="dark"></imageBlock>'
 			);
 		} );
 
 		it( 'model attribute value is a string', () => {
-			schema.extend( 'image', {
+			schema.extend( 'imageBlock', {
 				allowAttributes: [ 'styled' ]
 			} );
 
@@ -477,12 +624,12 @@ describe( 'UpcastHelpers', () => {
 
 			expectResult(
 				new ViewContainerElement( viewDocument, 'img', { class: 'styled-dark' } ),
-				'<image styled="dark"></image>'
+				'<imageBlock styled="dark"></imageBlock>'
 			);
 
 			expectResult(
 				new ViewContainerElement( viewDocument, 'img', { class: 'styled-xxx' } ),
-				'<image></image>'
+				'<imageBlock></imageBlock>'
 			);
 
 			expectResult(
@@ -492,7 +639,7 @@ describe( 'UpcastHelpers', () => {
 		} );
 
 		it( 'model attribute value is a function', () => {
-			schema.extend( 'image', {
+			schema.extend( 'imageBlock', {
 				allowAttributes: [ 'styled' ]
 			} );
 
@@ -503,9 +650,12 @@ describe( 'UpcastHelpers', () => {
 				},
 				model: {
 					key: 'styled',
-					value: viewElement => {
+					value: ( viewElement, conversionApi ) => {
 						const regexp = /styled-([\S]+)/;
 						const match = viewElement.getAttribute( 'class' ).match( regexp );
+
+						// To ensure conversion API is provided.
+						expect( conversionApi.writer ).to.instanceof( Writer );
 
 						return match[ 1 ];
 					}
@@ -514,7 +664,7 @@ describe( 'UpcastHelpers', () => {
 
 			expectResult(
 				new ViewAttributeElement( viewDocument, 'img', { 'class': 'styled-dark' } ),
-				'<image styled="dark"></image>'
+				'<imageBlock styled="dark"></imageBlock>'
 			);
 		} );
 
@@ -523,12 +673,12 @@ describe( 'UpcastHelpers', () => {
 
 			expectResult(
 				new ViewAttributeElement( viewDocument, 'img', { src: 'foo.jpg' } ),
-				'<image></image>'
+				'<imageBlock></imageBlock>'
 			);
 		} );
 
 		it( 'should not do anything if returned model attribute is null', () => {
-			schema.extend( 'image', {
+			schema.extend( 'imageBlock', {
 				allowAttributes: [ 'styled' ]
 			} );
 
@@ -556,7 +706,7 @@ describe( 'UpcastHelpers', () => {
 
 			expectResult(
 				new ViewAttributeElement( viewDocument, 'img', { class: 'styled' } ),
-				'<image styled="true"></image>'
+				'<imageBlock styled="true"></imageBlock>'
 			);
 		} );
 
@@ -584,19 +734,68 @@ describe( 'UpcastHelpers', () => {
 				'<div border="border"><div shade="shade"></div></div>'
 			);
 		} );
+
+		// https://github.com/ckeditor/ckeditor5/issues/11000
+		it( 'should not set an attribute on child nodes if parent was not converted', () => {
+			upcastHelpers.elementToElement( { view: 'p', model: 'paragraph' } );
+			upcastHelpers.attributeToAttribute( { view: { key: 'foo' }, model: 'foo' } );
+
+			schema.extend( 'paragraph', {
+				allowAttributes: [ 'foo' ]
+			} );
+
+			schema.extend( '$text', {
+				allowAttributes: [ 'foo' ]
+			} );
+
+			const viewElement = viewParse(
+				'<div foo="foo-value">abc</div>' +
+				'<p foo="foo-value">def</p>'
+			);
+
+			expectResult(
+				viewElement,
+				'abc<paragraph foo="foo-value">def</paragraph>'
+			);
+		} );
+
+		// #9536.
+		describe( 'calling the `model.value()` callback', () => {
+			it( 'should not call the `model.view()` callback if the attribute was already consumed', () => {
+				const spy = sinon.spy();
+
+				upcastHelpers.attributeToAttribute( {
+					view: {
+						name: 'span',
+						styles: {
+							'text-align': /[\s\S]+/
+						}
+					},
+					model: {
+						key: 'alignment',
+						value: spy
+					}
+				} );
+
+				upcastDispatcher.on( 'element:span', ( evt, data, conversionApi ) => {
+					conversionApi.consumable.consume( data.viewItem, {
+						styles: [ 'text-align' ]
+					} );
+				} );
+
+				const viewElement = viewParse( '<span style="text-align:center;">Foo.</span>' );
+
+				expectResult(
+					viewElement,
+					'Foo.'
+				);
+
+				expect( spy.called ).to.equal( false );
+			} );
+		} );
 	} );
 
 	describe( 'elementToMarker()', () => {
-		beforeEach( () => {
-			// Silence warning about deprecated method.
-			// This whole suite will be removed when the deprecated method is removed.
-			sinon.stub( console, 'warn' );
-		} );
-
-		afterEach( () => {
-			console.warn.restore();
-		} );
-
 		it( 'should be chainable', () => {
 			expect( upcastHelpers.elementToMarker( { view: 'marker-search', model: 'search' } ) ).to.equal( upcastHelpers );
 		} );
@@ -659,7 +858,12 @@ describe( 'UpcastHelpers', () => {
 		it( 'config.model is a function', () => {
 			upcastHelpers.elementToMarker( {
 				view: 'comment',
-				model: viewElement => 'comment:' + viewElement.getAttribute( 'data-comment-id' )
+				model: ( viewElement, conversionApi ) => {
+					// To ensure conversion API is provided.
+					expect( conversionApi.writer ).to.instanceof( Writer );
+
+					return 'comment:' + viewElement.getAttribute( 'data-comment-id' );
+				}
 			} );
 
 			const frag = new ViewDocumentFragment( viewDocument, [
@@ -836,7 +1040,15 @@ describe( 'UpcastHelpers', () => {
 		} );
 
 		it( 'conversion callback, mixed, multiple markers, name', () => {
-			upcastHelpers.dataToMarker( { view: 'g', model: name => 'group:' + name.split( '_' )[ 0 ] } );
+			upcastHelpers.dataToMarker( {
+				view: 'g',
+				model: ( name, conversionApi ) => {
+					// To ensure conversion API is provided.
+					expect( conversionApi.writer ).to.instanceof( Writer );
+
+					return 'group:' + name.split( '_' )[ 0 ];
+				}
+			} );
 
 			expectResult(
 				viewParse(
@@ -868,10 +1080,30 @@ describe( 'UpcastHelpers', () => {
 			expectResult(
 				viewParse( '<div data-group-end-after="foo" data-group-start-before="foo"><p>Foo</p></div>' ),
 				'<paragraph>Foo</paragraph>',
-				[
-					{ name: 'group:foo', start: [ 0 ], end: [ 1 ] }
-				]
+				{ name: 'group:foo', start: [ 0 ], end: [ 1 ] }
 			);
+		} );
+
+		it( 'should not invoke conversion API when the attributes are not consumable', () => {
+			upcastHelpers.dataToMarker( { view: 'fake' } );
+
+			let conversionConsumeSpy = sinon.spy();
+
+			upcastDispatcher.on( 'element:div', ( evt, data, conversionApi ) => {
+				conversionConsumeSpy = sinon.spy( conversionApi.consumable, 'consume' );
+			} );
+
+			expectResult(
+				viewParse( '<div data-group-end-after="foo" data-group-start-before="foo"><p>Foo</p></div>' ),
+				'<paragraph>Foo</paragraph>',
+				[]
+			);
+
+			for ( const consumeCall of conversionConsumeSpy.getCalls() ) {
+				if ( consumeCall.args[ 1 ] ) {
+					expect( consumeCall.args[ 1 ] ).to.not.have.property( 'attributes' );
+				}
+			}
 		} );
 	} );
 
@@ -879,7 +1111,7 @@ describe( 'UpcastHelpers', () => {
 		const conversionResult = model.change( writer => upcastDispatcher.convert( viewToConvert, writer ) );
 
 		if ( markers ) {
-			markers = Array.isArray( markers ) ? markers : [ markers ];
+			markers = toArray( markers );
 
 			for ( const marker of markers ) {
 				expect( conversionResult.markers.has( marker.name ) ).to.be.true;
@@ -948,7 +1180,7 @@ describe( 'upcast-converters', () => {
 
 		it( 'should not convert text if it is wrong with schema', () => {
 			schema.addChildCheck( ( ctx, childDef ) => {
-				if ( childDef.name == '$text' && ctx.endsWith( '$root' ) ) {
+				if ( ( childDef.name == '$text' || childDef.name == 'paragraph' ) && ctx.endsWith( '$root' ) ) {
 					return false;
 				}
 			} );
@@ -959,6 +1191,56 @@ describe( 'upcast-converters', () => {
 
 			expect( conversionResult ).to.be.instanceof( ModelDocumentFragment );
 			expect( conversionResult.childCount ).to.equal( 0 );
+
+			conversionResult = model.change( writer => dispatcher.convert( viewText, writer, [ '$block' ] ) );
+
+			expect( conversionResult ).to.be.instanceof( ModelDocumentFragment );
+			expect( conversionResult.childCount ).to.equal( 1 );
+			expect( conversionResult.getChild( 0 ) ).to.be.instanceof( ModelText );
+			expect( conversionResult.getChild( 0 ).data ).to.equal( 'foobar' );
+		} );
+
+		it( 'should also include $marker when auto-paragraphing $text.', () => {
+			// Make $text invalid to trigger auto-paragraphing.
+			schema.addChildCheck( ( ctx, childDef ) => {
+				if ( ( childDef.name == '$text' ) && ctx.endsWith( '$root' ) ) {
+					return false;
+				}
+			} );
+
+			const viewText = new ViewText( viewDocument, 'foobar' );
+			dispatcher.on( 'text', ( evt, data, conversionApi ) => {
+				// Add $marker element before processing $text.
+				const element = new ModelElement( '$marker', { 'data-name': 'marker1' } );
+				conversionApi.writer.insert( element, data.modelCursor );
+				data.modelCursor = conversionApi.writer.createPositionAfter( element );
+
+				// Convert $text.
+				convertText()( evt, data, conversionApi );
+			} );
+
+			const conversionResult = model.change( writer => dispatcher.convert( viewText, writer, context ) );
+
+			// Check that marker is in paragraph.
+			expect( conversionResult.markers.get( 'marker1' ).start.parent.name ).to.be.equal( 'paragraph' );
+		} );
+
+		it( 'should auto-paragraph a text if it is not allowed at the insertion position but would be inserted if auto-paragraphed', () => {
+			schema.addChildCheck( ( ctx, childDef ) => {
+				if ( childDef.name == '$text' && ctx.endsWith( '$root' ) ) {
+					return false;
+				}
+			} );
+
+			const viewText = new ViewText( viewDocument, 'foobar' );
+			dispatcher.on( 'text', convertText() );
+			let conversionResult = model.change( writer => dispatcher.convert( viewText, writer, context ) );
+
+			expect( conversionResult ).to.be.instanceof( ModelDocumentFragment );
+			expect( conversionResult.childCount ).to.equal( 1 );
+			expect( conversionResult.getChild( 0 ).name ).to.equal( 'paragraph' );
+			expect( conversionResult.getNodeByPath( [ 0, 0 ] ) ).to.be.instanceof( ModelText );
+			expect( conversionResult.getNodeByPath( [ 0, 0 ] ).data ).to.equal( 'foobar' );
 
 			conversionResult = model.change( writer => dispatcher.convert( viewText, writer, [ '$block' ] ) );
 
@@ -1014,7 +1296,7 @@ describe( 'upcast-converters', () => {
 					const paragraph = conversionApi.writer.createElement( 'paragraph' );
 
 					conversionApi.writer.insert( paragraph, data.modelCursor );
-					conversionApi.convertChildren( data.viewItem, ModelPosition._createAt( paragraph, 0 ) );
+					conversionApi.convertChildren( data.viewItem, paragraph );
 
 					data.modelRange = ModelRange._createOn( paragraph );
 					data.modelCursor = data.modelRange.end;

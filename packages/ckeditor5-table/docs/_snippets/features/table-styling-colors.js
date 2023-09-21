@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -76,11 +76,11 @@ const customColorPalette = [
 	},
 	{
 		color: 'hsl(0, 0%, 62%)',
-		label: 'Grey'
+		label: 'Gray'
 	},
 	{
 		color: 'hsl(200, 18%, 46%)',
-		label: 'Blue Grey'
+		label: 'Blue Gray'
 	},
 	{
 		color: 'hsl(200, 18%, 100%)',
@@ -107,11 +107,18 @@ ClassicEditor
 		},
 		image: {
 			toolbar: [
-				'imageStyle:full',
+				'imageStyle:inline',
+				'imageStyle:block',
 				'imageStyle:side',
 				'|',
+				'toggleImageCaption',
 				'imageTextAlternative'
 			]
+		},
+		ui: {
+			viewportOffset: {
+				top: window.getViewportTopOffsetConfig()
+			}
 		}
 	} )
 	.then( editor => {

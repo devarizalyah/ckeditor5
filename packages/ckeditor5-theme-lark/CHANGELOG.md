@@ -74,7 +74,7 @@ Changes for the past releases are available below.
 * Enabled additional box-shadow on `.ck-button` to meet WCAG AA recommendations. Adjusted the color of the `--ck-color-focus-border` for the same reason (editables, widget selection, etc.). Closes [ckeditor/ckeditor5#5580](https://github.com/ckeditor/ckeditor5/issues/5580). ([0fe1500](https://github.com/ckeditor/ckeditor5-theme-lark/commit/0fe1500))
 
   Also:
-  * Optimized the color of a gird component for WCAG AA.
+  * Optimized the color of a grid component for WCAG AA.
   * Imported insert table UI styles from ckeditor5-table (code refactoring).
      * Improved the table UI contrast and accessibility.
 
@@ -101,7 +101,7 @@ Changes for the past releases are available below.
 ### Other changes
 
 * The issue tracker for this package was moved to https://github.com/ckeditor/ckeditor5/issues. See [ckeditor/ckeditor5#1988](https://github.com/ckeditor/ckeditor5/issues/1988). ([59e4777](https://github.com/ckeditor/ckeditor5-theme-lark/commit/59e4777))
-* The `.ck-progress-bar` styles should not be under with `.ck-content`. Additionaly removed two unused custom properties: `--ck-color-upload-infinite-background` and `--ck-image-upload-progress-line-width`. Closes https://github.com/ckeditor/ckeditor5-theme-lark/issues/239. Closes https://github.com/ckeditor/ckeditor5/issues/1915. ([cb92793](https://github.com/ckeditor/ckeditor5-theme-lark/commit/cb92793))
+* The `.ck-progress-bar` styles should not be under with `.ck-content`. Additionally removed two unused custom properties: `--ck-color-upload-infinite-background` and `--ck-image-upload-progress-line-width`. Closes https://github.com/ckeditor/ckeditor5-theme-lark/issues/239. Closes https://github.com/ckeditor/ckeditor5/issues/1915. ([cb92793](https://github.com/ckeditor/ckeditor5-theme-lark/commit/cb92793))
 
 
 ## [14.1.1](https://github.com/ckeditor/ckeditor5-theme-lark/compare/v14.1.0...v14.1.1) (2019-07-10)
@@ -264,7 +264,7 @@ Internal changes only (updated dependencies, documentation, etc.).
 
 ### BREAKING CHANGES
 
-* The license under which CKEditor 5 is released has been changed from a triple GPL, LGPL and MPL license to a GPL2+ only. See [ckeditor/ckeditor5#991](https://github.com/ckeditor/ckeditor5/issues/991) for more information.
+* The license under which CKEditor&nbsp;5 is released has been changed from a triple GPL, LGPL and MPL license to a GPL2+ only. See [ckeditor/ckeditor5#991](https://github.com/ckeditor/ckeditor5/issues/991) for more information.
 
 
 ## [1.0.0-beta.4](https://github.com/ckeditor/ckeditor5-theme-lark/compare/v1.0.0-beta.2...v1.0.0-beta.4) (2018-04-19)
@@ -332,7 +332,7 @@ Internal changes only (updated dependencies, documentation, etc.).
 
 * The `.ck-editor-toolbar` CSS class has been removed.
 * Various CSS variables (mostly colors) have been removed. Please make sure your code uses the latest theme API.
-* From now on there's only one subset of the theme, aligned to the default look of CKEditor 5.
+* From now on there's only one subset of the theme, aligned to the default look of CKEditor&nbsp;5.
 * Various UI components' styles have been rewritten. The CSS selectors that used to style them may have a different specificity and appear in a different order.
 * The styles are no longer developed in SASS which means various `.scss` files (including variables, mixins, etc.) became unavailable. Please refer to the [Theme Customization](https://ckeditor.com/docs/ckeditor5/latest/framework/guides/ui/theme-customization.html) guide to learn more about migration to PostCSS.
 

@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -14,26 +14,25 @@ import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
 import BlockQuote from '@ckeditor/ckeditor5-block-quote/src/blockquote';
 import Widget from '../src/widget';
 import WidgetToolbarRepository from '../src/widgettoolbarrepository';
-import {
-	isWidget,
-	toWidget,
-	centeredBalloonPositionForLongWidgets
-} from '../src/utils';
+import { isWidget, toWidget } from '../src/utils';
 import ButtonView from '@ckeditor/ckeditor5-ui/src/button/buttonview';
 import View from '@ckeditor/ckeditor5-ui/src/view';
+import EditorUI from '@ckeditor/ckeditor5-ui/src/editorui/editorui';
 
 import { setData } from '@ckeditor/ckeditor5-engine/src/dev-utils/model';
 import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 import { expectToThrowCKEditorError } from '@ckeditor/ckeditor5-utils/tests/_utils/utils';
 
 describe( 'WidgetToolbarRepository', () => {
-	let editor, model, balloon, widgetToolbarRepository, editorElement;
+	let editor, model, balloon, widgetToolbarRepository, editorElement, addToolbarSpy;
 
 	testUtils.createSinonSandbox();
 
 	beforeEach( () => {
 		editorElement = document.createElement( 'div' );
 		document.body.appendChild( editorElement );
+
+		addToolbarSpy = sinon.spy( EditorUI.prototype, 'addToolbar' );
 
 		return ClassicTestEditor
 			.create( editorElement, {
@@ -80,6 +79,61 @@ describe( 'WidgetToolbarRepository', () => {
 
 			expect( widgetToolbarRepository._toolbarDefinitions.size ).to.equal( 1 );
 			expect( widgetToolbarRepository._toolbarDefinitions.get( 'fake' ) ).to.be.an( 'object' );
+		} );
+
+		describe( 'Focus handling and navigation across toolbars using keyboard', () => {
+			it( 'should register the toolbar as focusable toolbar in EditorUI with proper configuration', () => {
+				widgetToolbarRepository.register( 'fake', {
+					items: editor.config.get( 'fake.toolbar' ),
+					getRelatedElement: () => null
+				} );
+
+				sinon.assert.calledWithExactly(
+					addToolbarSpy.lastCall,
+					widgetToolbarRepository._toolbarDefinitions.get( 'fake' ).view,
+					sinon.match( {
+						isContextual: true,
+						beforeFocus: sinon.match.func
+					} )
+				);
+			} );
+
+			it( 'should show the toolbar when Alt+F10 is pressed if there is an element to attach to', () => {
+				widgetToolbarRepository.register( 'fake', {
+					items: editor.config.get( 'fake.toolbar' ),
+					getRelatedElement: () => editor.editing.view.document.getRoot()
+				} );
+
+				addToolbarSpy.lastCall.args[ 1 ].beforeFocus();
+
+				expect( balloon.visibleView ).to.equal( widgetToolbarRepository._toolbarDefinitions.get( 'fake' ).view );
+			} );
+
+			it( 'should not show the toolbar when Alt+F10 is pressed if not possible because there is no element to attach to', () => {
+				widgetToolbarRepository.register( 'fake', {
+					items: editor.config.get( 'fake.toolbar' ),
+					getRelatedElement: () => null
+				} );
+
+				addToolbarSpy.lastCall.args[ 1 ].beforeFocus();
+
+				expect( balloon.visibleView ).to.be.null;
+			} );
+
+			it( 'should provide the logic to hide the toolbar', () => {
+				widgetToolbarRepository.register( 'fake', {
+					items: editor.config.get( 'fake.toolbar' ),
+					getRelatedElement: () => editor.editing.view.document.getRoot()
+				} );
+
+				addToolbarSpy.lastCall.args[ 1 ].beforeFocus();
+
+				expect( balloon.visibleView ).to.equal( widgetToolbarRepository._toolbarDefinitions.get( 'fake' ).view );
+
+				addToolbarSpy.lastCall.args[ 1 ].afterBlur();
+
+				expect( balloon.visibleView ).to.be.null;
+			} );
 		} );
 
 		it( 'should throw when adding two times widget with the same id', () => {
@@ -138,7 +192,61 @@ describe( 'WidgetToolbarRepository', () => {
 			expect( widgetToolbarRepository._toolbarDefinitions.get( 'fake' ) ).to.be.undefined;
 
 			expect( consoleWarnStub.calledOnce ).to.equal( true );
-			expect( consoleWarnStub.firstCall.args[ 0 ] ).to.match( /^widget-toolbar-no-items:/ );
+			expect( consoleWarnStub.firstCall.args[ 0 ] ).to.match( /^widget-toolbar-no-items/ );
+		} );
+
+		describe( 'lazy init', () => {
+			it( 'should not fill toolbar items immediately', () => {
+				widgetToolbarRepository.register( 'fake', {
+					items: editor.config.get( 'fake.toolbar' ),
+					getRelatedElement: () => null
+				} );
+
+				const toolbarView = widgetToolbarRepository._toolbarDefinitions.get( 'fake' ).view;
+
+				toolbarView.render();
+
+				expect( toolbarView.items.length ).to.equal( 0 );
+
+				toolbarView.destroy();
+			} );
+
+			it( 'should fill toolbar items on first show', () => {
+				widgetToolbarRepository.register( 'fake', {
+					items: editor.config.get( 'fake.toolbar' ),
+					getRelatedElement: () => editor.editing.view.document.getRoot()
+				} );
+
+				const toolbarDefinition = widgetToolbarRepository._toolbarDefinitions.get( 'fake' );
+
+				widgetToolbarRepository._showToolbar( toolbarDefinition, editor.editing.view.document.getRoot() );
+
+				expect( balloon.visibleView ).to.equal( toolbarDefinition.view );
+				expect( toolbarDefinition.view.items.length ).to.equal( 1 );
+			} );
+
+			it( 'should fill toolbar items on first show (and only on the first)', () => {
+				widgetToolbarRepository.register( 'fake', {
+					items: editor.config.get( 'fake.toolbar' ),
+					getRelatedElement: () => editor.editing.view.document.getRoot()
+				} );
+
+				const toolbarDefinition = widgetToolbarRepository._toolbarDefinitions.get( 'fake' );
+
+				widgetToolbarRepository._showToolbar( toolbarDefinition, editor.editing.view.document.getRoot() );
+
+				expect( balloon.visibleView ).to.equal( toolbarDefinition.view );
+				expect( toolbarDefinition.view.items.length ).to.equal( 1 );
+
+				widgetToolbarRepository._hideToolbar( toolbarDefinition );
+
+				expect( balloon.visibleView ).to.equal( null );
+
+				widgetToolbarRepository._showToolbar( toolbarDefinition, editor.editing.view.document.getRoot() );
+
+				expect( balloon.visibleView ).to.equal( toolbarDefinition.view );
+				expect( toolbarDefinition.view.items.length ).to.equal( 1 );
+			} );
 		} );
 	} );
 
@@ -406,7 +514,7 @@ describe( 'WidgetToolbarRepository', () => {
 			expect( balloon.visibleView ).to.equal( fakeChildWidgetToolbarView );
 
 			expect( updatePositionSpy.firstCall.args[ 0 ].position.target ).to.equal(
-				view.domConverter.viewToDom( fakeChildViewElement ) );
+				view.domConverter.mapViewToDom( fakeChildViewElement ) );
 		} );
 
 		it( 'should not update balloon position when toolbar is in not visible stack', () => {
@@ -517,7 +625,7 @@ describe( 'WidgetToolbarRepository', () => {
 						defaultPositions.southArrowNorth,
 						defaultPositions.southArrowNorthWest,
 						defaultPositions.southArrowNorthEast,
-						centeredBalloonPositionForLongWidgets
+						defaultPositions.viewportStickyNorth
 					]
 				},
 				balloonClassName: 'ck-toolbar-container'
@@ -732,28 +840,26 @@ class FakeWidget extends Plugin {
 		schema.register( 'fake-widget', {
 			isObject: true,
 			isBlock: true,
-			allowWhere: '$block'
+			allowWhere: '$block',
+			allowChildren: [ '$text', 'paragraph' ]
 		} );
-
-		schema.extend( '$text', { allowIn: 'fake-widget' } );
-		schema.extend( 'paragraph', { allowIn: 'fake-widget' } );
 
 		const conversion = editor.conversion;
 
 		conversion.for( 'dataDowncast' ).elementToElement( {
 			model: 'fake-widget',
-			view: ( modelElement, viewWriter ) => {
-				return viewWriter.createContainerElement( 'div' );
+			view: ( modelElement, { writer } ) => {
+				return writer.createContainerElement( 'div' );
 			}
 		} );
 
 		conversion.for( 'editingDowncast' ).elementToElement( {
 			model: 'fake-widget',
-			view: ( modelElement, viewWriter ) => {
-				const fakeWidget = viewWriter.createContainerElement( 'div' );
-				viewWriter.setCustomProperty( 'fakeWidget', true, fakeWidget );
+			view: ( modelElement, { writer } ) => {
+				const fakeWidget = writer.createContainerElement( 'div' );
+				writer.setCustomProperty( 'fakeWidget', true, fakeWidget );
 
-				return toWidget( fakeWidget, viewWriter, { label: 'fake-widget' } );
+				return toWidget( fakeWidget, writer, { label: 'fake-widget' } );
 			}
 		} );
 
@@ -761,8 +867,8 @@ class FakeWidget extends Plugin {
 			view: {
 				name: 'div'
 			},
-			model: ( view, modelWriter ) => {
-				return modelWriter.createElement( 'fake-widget' );
+			model: ( view, { writer } ) => {
+				return writer.createElement( 'fake-widget' );
 			}
 		} );
 	}
@@ -794,18 +900,18 @@ class FakeChildWidget extends Plugin {
 
 		conversion.for( 'dataDowncast' ).elementToElement( {
 			model: 'fake-child-widget',
-			view: ( modelElement, viewWriter ) => {
-				return viewWriter.createContainerElement( 'div' );
+			view: ( modelElement, { writer } ) => {
+				return writer.createContainerElement( 'div' );
 			}
 		} );
 
 		conversion.for( 'editingDowncast' ).elementToElement( {
 			model: 'fake-child-widget',
-			view: ( modelElement, viewWriter ) => {
-				const fakeWidget = viewWriter.createContainerElement( 'div' );
-				viewWriter.setCustomProperty( 'fakeChildWidget', true, fakeWidget );
+			view: ( modelElement, { writer } ) => {
+				const fakeWidget = writer.createContainerElement( 'div' );
+				writer.setCustomProperty( 'fakeChildWidget', true, fakeWidget );
 
-				return toWidget( fakeWidget, viewWriter, { label: 'fake-child-widget' } );
+				return toWidget( fakeWidget, writer, { label: 'fake-child-widget' } );
 			}
 		} );
 
@@ -813,8 +919,8 @@ class FakeChildWidget extends Plugin {
 			view: {
 				name: 'div'
 			},
-			model: ( view, modelWriter ) => {
-				return modelWriter.createElement( 'fake-child-widget' );
+			model: ( view, { writer } ) => {
+				return writer.createElement( 'fake-child-widget' );
 			}
 		} );
 	}

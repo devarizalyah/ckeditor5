@@ -1,9 +1,13 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 import { testDataProcessor } from '../_utils/utils';
+import MarkdownDataProcessor from '../../src/gfmdataprocessor';
+import HtmlDataProcessor from '@ckeditor/ckeditor5-engine/src/dataprocessor/htmldataprocessor';
+import ViewDocument from '@ckeditor/ckeditor5-engine/src/view/document';
+import { StylesProcessor } from '@ckeditor/ckeditor5-engine/src/view/stylesmap';
 
 describe( 'GFMDataProcessor', () => {
 	describe( 'lists', () => {
@@ -321,7 +325,7 @@ describe( 'GFMDataProcessor', () => {
 			);
 		} );
 
-		it( 'should create same bullet from different list indicators', () => {
+		it( 'should create different lists from different list indicators', () => {
 			testDataProcessor(
 				'* test\n' +
 				'+ test\n' +
@@ -329,14 +333,58 @@ describe( 'GFMDataProcessor', () => {
 
 				'<ul>' +
 					'<li>test</li>' +
+				'</ul>' +
+				'<ul>' +
 					'<li>test</li>' +
+				'</ul>' +
+				'<ul>' +
 					'<li>test</li>' +
 				'</ul>',
 
 				// After converting back list items will be unified.
 				'*   test\n' +
+				'\n' +
 				'*   test\n' +
+				'\n' +
 				'*   test'
+			);
+		} );
+	} );
+
+	describe( 'todo lists', () => {
+		it( 'should process todo lists', () => {
+			testDataProcessor(
+				'*   [ ] Item 1\n' +
+				'*   [x] Item 2',
+
+				'<ul>' +
+					'<li><input disabled="" type="checkbox"></input>Item 1</li>' +
+					'<li><input checked="" disabled="" type="checkbox"></input>Item 2</li>' +
+				'</ul>' );
+		} );
+
+		it( 'should process the HTML produced by the todo list feature', () => {
+			const viewDocument = new ViewDocument( new StylesProcessor() );
+
+			const htmlDataProcessor = new HtmlDataProcessor( viewDocument );
+			const mdDataProcessor = new MarkdownDataProcessor( viewDocument );
+
+			const viewFragment = htmlDataProcessor.toView(
+				'<ul class="todo-list">' +
+					'<li><label class="todo-list__label">' +
+						'<input type="checkbox" disabled="disabled">' +
+						'<span class="todo-list__label__description">Item 1</span>' +
+					'</label></li>' +
+					'<li><label class="todo-list__label">' +
+						'<input type="checkbox" disabled="disabled" checked="checked">' +
+						'<span class="todo-list__label__description">Item 2</span>' +
+					'</label></li>' +
+				'</ul>'
+			);
+
+			expect( mdDataProcessor.toData( viewFragment ) ).to.equal(
+				'*   [ ] Item 1\n' +
+				'*   [x] Item 2'
 			);
 		} );
 	} );

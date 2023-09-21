@@ -2,25 +2,25 @@
 category: api-reference
 ---
 
-# CKEditor 5 list feature
+# CKEditor&nbsp;5 list feature
 
 [![npm version](https://badge.fury.io/js/%40ckeditor%2Fckeditor5-list.svg)](https://www.npmjs.com/package/@ckeditor/ckeditor5-list)
 
-This package implements bulleted, numbered and to-do list feature for CKEditor 5.
+This package implements the bulleted, numbered and to-do list features for CKEditor&nbsp;5.
 
 ## Documentation
 
-See the {@link module:list/list~List} plugin documentation and {@link features/todo-lists to-do list feature} guide.
+See the {@link module:list/list~List} plugin documentation as well as the {@link features/lists lists} and {@link features/todo-lists to-do list feature guides}.
 
 ## Installation
 
-```bash
+```
 npm install --save @ckeditor/ckeditor5-list
 ```
 
 ## Contribute
 
-The source code of this package is available on GitHub in https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-list.
+The source code of this package is available on GitHub in [https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-list](https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-list).
 
 ## External links
 

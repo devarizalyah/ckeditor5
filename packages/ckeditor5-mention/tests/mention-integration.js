@@ -1,18 +1,19 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 /* global document, setTimeout */
 
 import BlockQuote from '@ckeditor/ckeditor5-block-quote/src/blockquote';
-import Clipboard from '@ckeditor/ckeditor5-clipboard/src/clipboard';
+import ClipboardPipeline from '@ckeditor/ckeditor5-clipboard/src/clipboardpipeline';
 import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
 import Table from '@ckeditor/ckeditor5-table/src/table';
 import TableToolbar from '@ckeditor/ckeditor5-table/src/tabletoolbar';
 import UndoEditing from '@ckeditor/ckeditor5-undo/src/undoediting';
 import Link from '@ckeditor/ckeditor5-link/src/link';
 import Delete from '@ckeditor/ckeditor5-typing/src/delete';
+import DomEventData from '@ckeditor/ckeditor5-engine/src/view/observer/domeventdata';
 import ClassicTestEditor from '@ckeditor/ckeditor5-core/tests/_utils/classictesteditor';
 
 import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
@@ -184,13 +185,13 @@ describe( 'Mention feature - integration', () => {
 
 		beforeEach( () => {
 			return ClassicTestEditor
-				.create( div, { plugins: [ Clipboard, Paragraph, BlockQuote, MentionEditing, UndoEditing ] } )
+				.create( div, { plugins: [ ClipboardPipeline, Paragraph, BlockQuote, MentionEditing, UndoEditing ] } )
 				.then( newEditor => {
 					editor = newEditor;
 					model = editor.model;
 					doc = model.document;
 
-					clipboard = editor.plugins.get( 'Clipboard' );
+					clipboard = editor.plugins.get( 'ClipboardPipeline' );
 				} );
 		} );
 
@@ -313,7 +314,7 @@ describe( 'Mention feature - integration', () => {
 						writer.setSelection( writer.createRangeOn( model.document.getRoot().getChild( 0 ).getChild( 0 ) ) );
 					} );
 
-					editor.editing.view.document.fire( 'click' );
+					editor.editing.view.document.fire( 'click', { domEvent: {} } );
 
 					expect( panelView.isVisible ).to.be.true;
 					expect( balloon.visibleView === mentionsView ).to.be.false; // LinkUI
@@ -331,6 +332,63 @@ describe( 'Mention feature - integration', () => {
 
 					expect( panelView.isVisible ).to.be.false;
 				} );
+		} );
+	} );
+
+	describe( 'with table', () => {
+		beforeEach( () => {
+			return ClassicTestEditor
+				.create( div, {
+					plugins: [ Paragraph, Table, Mention ],
+					mention: {
+						feeds: [
+							{
+								marker: '@',
+								feed: [ '@Barney' ]
+							}
+						]
+					}
+				} )
+				.then( newEditor => {
+					editor = newEditor;
+				} );
+		} );
+
+		it( 'should not throw on backspace: selection after table containing 2 mentions in the last cell', () => {
+			const viewDocument = editor.editing.view.document;
+
+			// Insert table with 2 mentions in the last cell
+			expect( () => {
+				editor.setData(
+					'<figure class="table"><table><tbody><tr><td>' +
+						'<span class="mention" data-mention="@Barney">@Barney</span> ' +
+						'<span class="mention" data-mention="@Barney">@Barney</span>' +
+					'</td></tr></tbody></table></figure><p>&nbsp;</p>' );
+			} ).not.to.throw();
+
+			// Set selection after the table
+			editor.model.change( writer => {
+				const paragraph = editor.model.document.getRoot().getChild( 1 );
+
+				writer.setSelection( paragraph, 0 );
+			} );
+
+			const deleteEvent = new DomEventData(
+				viewDocument,
+				{ preventDefault: sinon.spy() },
+				{ direction: 'backward', unit: 'codePoint', sequence: 1 }
+			);
+
+			expect( () => {
+				viewDocument.fire( 'delete', deleteEvent );
+			} ).not.to.throw();
+
+			expect( editor.getData() ).to.equal(
+				'<figure class="table"><table><tbody><tr><td>' +
+					'<span class="mention" data-mention="@Barney">@Barney</span> ' +
+					'<span class="mention" data-mention="@Barney">@Barney</span>' +
+				'</td></tr></tbody></table></figure>'
+			);
 		} );
 	} );
 } );

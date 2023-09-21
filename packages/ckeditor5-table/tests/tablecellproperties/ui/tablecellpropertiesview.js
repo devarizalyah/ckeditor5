@@ -1,9 +1,9 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
-/* globals Event */
+/* globals document, Event */
 
 import TableCellPropertiesView from '../../../src/tablecellproperties/ui/tablecellpropertiesview';
 import LabeledFieldView from '@ckeditor/ckeditor5-ui/src/labeledfield/labeledfieldview';
@@ -37,7 +37,18 @@ const VIEW_OPTIONS = {
 			label: 'Green',
 			hasBorder: false
 		}
-	]
+	],
+	defaultTableCellProperties: {
+		borderColor: '',
+		borderStyle: 'none',
+		borderWidth: '',
+		horizontalAlignment: 'left',
+		verticalAlignment: 'middle',
+		width: '',
+		height: '',
+		padding: '',
+		backgroundColor: ''
+	}
 };
 
 describe( 'table cell properties', () => {
@@ -50,9 +61,11 @@ describe( 'table cell properties', () => {
 			locale = { t: val => val };
 			view = new TableCellPropertiesView( locale, VIEW_OPTIONS );
 			view.render();
+			document.body.appendChild( view.element );
 		} );
 
 		afterEach( () => {
+			view.element.remove();
 			view.destroy();
 		} );
 
@@ -139,6 +152,8 @@ describe( 'table cell properties', () => {
 							expect(	labeledDropdown.fieldView.buttonView.isOn ).to.be.false;
 							expect(	labeledDropdown.fieldView.buttonView.withText ).to.be.true;
 							expect(	labeledDropdown.fieldView.buttonView.tooltip ).to.equal( 'Style' );
+							expect( labeledDropdown.fieldView.buttonView.ariaLabel ).to.equal( 'Style' );
+							expect( labeledDropdown.fieldView.buttonView.ariaLabelledBy ).to.be.undefined;
 						} );
 
 						it( 'should bind button\'s label to #borderStyle property', () => {
@@ -149,15 +164,26 @@ describe( 'table cell properties', () => {
 							expect( labeledDropdown.fieldView.buttonView.label ).to.equal( 'Dashed' );
 						} );
 
+						it( 'should bind #isEmpty to #borderStyle property', () => {
+							view.borderStyle = 'dotted';
+							expect( labeledDropdown.isEmpty ).to.be.false;
+
+							view.borderStyle = null;
+							expect( labeledDropdown.isEmpty ).to.be.true;
+						} );
+
 						it( 'should change #borderStyle when executed', () => {
+							labeledDropdown.fieldView.isOpen = true;
 							labeledDropdown.fieldView.listView.items.first.children.first.fire( 'execute' );
-							expect( view.borderStyle ).to.equal( '' );
+							expect( view.borderStyle ).to.equal( 'none' );
 
 							labeledDropdown.fieldView.listView.items.last.children.first.fire( 'execute' );
 							expect( view.borderStyle ).to.equal( 'outset' );
 						} );
 
 						it( 'should come with a set of pre–defined border styles', () => {
+							labeledDropdown.fieldView.isOpen = true;
+
 							expect( labeledDropdown.fieldView.listView.items.map( item => {
 								return item.children.first.label;
 							} ) ).to.have.ordered.members( [
@@ -170,10 +196,19 @@ describe( 'table cell properties', () => {
 							view.borderWidth = '1px';
 							view.borderColor = 'red';
 
-							view.borderStyle = '';
+							view.borderStyle = 'none';
 
 							expect( view.borderColor ).to.equal( '' );
 							expect( view.borderWidth ).to.equal( '' );
+						} );
+
+						it( 'listView should have properties set', () => {
+							labeledDropdown.fieldView.isOpen = true;
+
+							const listView = labeledDropdown.fieldView.listView;
+
+							expect( listView.element.role ).to.equal( 'menu' );
+							expect( listView.element.ariaLabel ).to.equal( 'Style' );
 						} );
 					} );
 
@@ -199,7 +234,7 @@ describe( 'table cell properties', () => {
 						} );
 
 						it( 'should be enabled only when #borderStyle is different than "none"', () => {
-							view.borderStyle = '';
+							view.borderStyle = 'none';
 							expect( labeledInput.isEnabled ).to.be.false;
 
 							view.borderStyle = 'dotted';
@@ -257,7 +292,7 @@ describe( 'table cell properties', () => {
 						} );
 
 						it( 'should be enabled only when #borderStyle is different than "none"', () => {
-							view.borderStyle = '';
+							view.borderStyle = 'none';
 							expect( labeledInput.isEnabled ).to.be.false;
 
 							view.borderStyle = 'dotted';
@@ -281,7 +316,11 @@ describe( 'table cell properties', () => {
 						const row = view.element.childNodes[ 2 ];
 
 						expect( row.classList.contains( 'ck-form__row' ) ).to.be.true;
-						expect( row.childNodes[ 0 ] ).to.equal( view.backgroundInput.element );
+						expect( row.classList.contains( 'ck-table-form__background-row' ) ).to.be.true;
+
+						expect( row.classList.contains( 'ck-form__row' ) ).to.be.true;
+						expect( row.childNodes[ 0 ].textContent ).to.equal( 'Background' );
+						expect( row.childNodes[ 1 ] ).to.equal( view.backgroundInput.element );
 					} );
 
 					describe( 'background color input', () => {
@@ -293,7 +332,7 @@ describe( 'table cell properties', () => {
 
 						it( 'should be created', () => {
 							expect( labeledInput.fieldView ).to.be.instanceOf( ColorInputView );
-							expect( labeledInput.label ).to.equal( 'Background' );
+							expect( labeledInput.label ).to.equal( 'Color' );
 							expect( labeledInput.class ).to.equal( 'ck-table-cell-properties-form__background' );
 						} );
 
@@ -517,7 +556,7 @@ describe( 'table cell properties', () => {
 							expect( toolbar.items.last.isOn ).to.be.true;
 
 							toolbar.items.first.fire( 'execute' );
-							expect( view.horizontalAlignment ).to.equal( '' );
+							expect( view.horizontalAlignment ).to.equal( 'left' );
 							expect( toolbar.items.last.isOn ).to.be.false;
 							expect( toolbar.items.first.isOn ).to.be.true;
 						} );
@@ -582,6 +621,7 @@ describe( 'table cell properties', () => {
 						expect( view.cancelButtonView.label ).to.equal( 'Cancel' );
 						expect( view.cancelButtonView.withText ).to.be.true;
 						expect( view.cancelButtonView.class ).to.equal( 'ck-button-cancel' );
+						expect( view.cancelButtonView.type ).to.equal( 'button' );
 					} );
 
 					it( 'should make the cancel button fire the #cancel event when executed', () => {
@@ -655,8 +695,10 @@ describe( 'table cell properties', () => {
 				expect( view._focusables.map( f => f ) ).to.have.members( [
 					view.borderStyleDropdown,
 					view.borderColorInput,
+					view.borderColorInput.fieldView.dropdownView.buttonView,
 					view.borderWidthInput,
 					view.backgroundInput,
+					view.backgroundInput.fieldView.dropdownView.buttonView,
 					view.widthInput,
 					view.heightInput,
 					view.paddingInput,
@@ -733,6 +775,24 @@ describe( 'table cell properties', () => {
 					sinon.assert.calledOnce( keyEvtData.stopPropagation );
 					sinon.assert.calledOnce( spy );
 				} );
+			} );
+		} );
+
+		describe( 'destroy()', () => {
+			it( 'should destroy the FocusTracker instance', () => {
+				const destroySpy = sinon.spy( view.focusTracker, 'destroy' );
+
+				view.destroy();
+
+				sinon.assert.calledOnce( destroySpy );
+			} );
+
+			it( 'should destroy the KeystrokeHandler instance', () => {
+				const destroySpy = sinon.spy( view.keystrokes, 'destroy' );
+
+				view.destroy();
+
+				sinon.assert.calledOnce( destroySpy );
 			} );
 		} );
 

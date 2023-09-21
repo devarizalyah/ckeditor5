@@ -1,12 +1,14 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 /* global document, window, Event */
 
 import ClassicTestEditor from '@ckeditor/ckeditor5-core/tests/_utils/classictesteditor';
+import MultiRootEditor from '@ckeditor/ckeditor5-editor-multi-root/src/multirooteditor';
 
+import EditorUI from '../../../src/editorui/editorui';
 import BlockToolbar from '../../../src/toolbar/block/blocktoolbar';
 import ToolbarView from '../../../src/toolbar/toolbarview';
 import BalloonPanelView from '../../../src/panel/balloon/balloonpanelview';
@@ -14,8 +16,7 @@ import BlockButtonView from '../../../src/toolbar/block/blockbuttonview';
 
 import Heading from '@ckeditor/ckeditor5-heading/src/heading';
 import HeadingButtonsUI from '@ckeditor/ckeditor5-heading/src/headingbuttonsui';
-import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
-import ParagraphButtonUI from '@ckeditor/ckeditor5-paragraph/src/paragraphbuttonui';
+import { Paragraph, ParagraphButtonUI } from '@ckeditor/ckeditor5-paragraph';
 import BlockQuote from '@ckeditor/ckeditor5-block-quote/src/blockquote';
 import Image from '@ckeditor/ckeditor5-image/src/image';
 import ImageCaption from '@ckeditor/ckeditor5-image/src/imagecaption';
@@ -27,10 +28,11 @@ import { keyCodes } from '@ckeditor/ckeditor5-utils/src/keyboard';
 import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 
 import Rect from '@ckeditor/ckeditor5-utils/src/dom/rect';
+import env from '@ckeditor/ckeditor5-utils/src/env';
 
 describe( 'BlockToolbar', () => {
 	let editor, element, blockToolbar;
-	let resizeCallback;
+	let resizeCallback, addToolbarSpy;
 
 	testUtils.createSinonSandbox();
 
@@ -52,6 +54,8 @@ describe( 'BlockToolbar', () => {
 			};
 		} );
 
+		addToolbarSpy = sinon.spy( EditorUI.prototype, 'addToolbar' );
+
 		return ClassicTestEditor.create( element, {
 			plugins: [ BlockToolbar, Heading, HeadingButtonsUI, Paragraph, ParagraphButtonUI, BlockQuote, Image, ImageCaption ],
 			blockToolbar: [ 'paragraph', 'heading1', 'heading2', 'blockQuote' ]
@@ -68,6 +72,13 @@ describe( 'BlockToolbar', () => {
 
 		element.remove();
 		return editor.destroy();
+	} );
+
+	after( () => {
+		// Clean up after the ResizeObserver stub in beforeEach(). Even though the global.window.ResizeObserver
+		// stub is restored, the ResizeObserver class (CKE5 module) keeps the reference to the single native
+		// observer. Resetting it will allow fresh start for any other test using ResizeObserver.
+		ResizeObserver._observerInstance = null;
 	} );
 
 	it( 'should have pluginName property', () => {
@@ -118,6 +129,41 @@ describe( 'BlockToolbar', () => {
 
 			return editor.destroy();
 		} );
+	} );
+
+	it( 'should have the isFloating option set to true', () => {
+		expect( blockToolbar.toolbarView.options.isFloating ).to.be.true;
+	} );
+
+	it( 'should have an accessible ARIA label set on the toolbar', () => {
+		expect( blockToolbar.toolbarView.ariaLabel ).to.equal( 'Editor block content toolbar' );
+	} );
+
+	it( 'should register its toolbar as focusable toolbar in EditorUI with proper configuration responsible for presentation', () => {
+		sinon.assert.calledWithExactly( addToolbarSpy.lastCall, blockToolbar.toolbarView, sinon.match( {
+			beforeFocus: sinon.match.func,
+			afterBlur: sinon.match.func
+		} ) );
+
+		addToolbarSpy.lastCall.args[ 1 ].beforeFocus();
+
+		expect( blockToolbar.panelView.isVisible ).to.be.true;
+
+		addToolbarSpy.lastCall.args[ 1 ].afterBlur();
+
+		expect( blockToolbar.panelView.isVisible ).to.be.false;
+	} );
+
+	it( 'should not show the panel on Alt+F10 when the button is invisible', () => {
+		// E.g. due to the toolbar not making sense for a selection.
+		blockToolbar.buttonView.isVisible = false;
+		addToolbarSpy.lastCall.args[ 1 ].beforeFocus();
+
+		expect( blockToolbar.panelView.isVisible ).to.be.false;
+
+		blockToolbar.buttonView.isVisible = true;
+		addToolbarSpy.lastCall.args[ 1 ].beforeFocus();
+		expect( blockToolbar.panelView.isVisible ).to.be.true;
 	} );
 
 	describe( 'child views', () => {
@@ -203,14 +249,12 @@ describe( 'BlockToolbar', () => {
 				expect( blockToolbar.panelView.isVisible ).to.be.false;
 			} );
 
-			it( 'should hide the panel on toolbar blur', () => {
-				blockToolbar.toolbarView.focusTracker.isFocused = true;
-
+			it( 'should hide the panel on button hide', () => {
 				blockToolbar.buttonView.fire( 'execute' );
 
 				expect( blockToolbar.panelView.isVisible ).to.be.true;
 
-				blockToolbar.toolbarView.focusTracker.isFocused = false;
+				blockToolbar.buttonView.fire( 'execute' );
 
 				expect( blockToolbar.panelView.isVisible ).to.be.false;
 			} );
@@ -290,6 +334,35 @@ describe( 'BlockToolbar', () => {
 				const blockToolbar = editor.plugins.get( BlockToolbar );
 				expect( blockToolbar.buttonView.isVisible ).to.be.false;
 			} );
+
+			describe( 'mousedown event', () => {
+				// https://github.com/ckeditor/ckeditor5/issues/12184
+				it( 'should not call preventDefault to not block dragstart', () => {
+					const ret = blockToolbar.buttonView.element.dispatchEvent( new Event( 'mousedown', { cancelable: true } ) );
+
+					expect( ret ).to.true;
+				} );
+
+				// https://github.com/ckeditor/ckeditor5/issues/12115
+				describe( 'in Safari', () => {
+					let view, stub;
+
+					beforeEach( () => {
+						stub = testUtils.sinon.stub( env, 'isSafari' ).value( true );
+						view = blockToolbar.buttonView;
+					} );
+
+					afterEach( () => {
+						stub.resetBehavior();
+					} );
+
+					it( 'should not preventDefault the event', () => {
+						const ret = view.element.dispatchEvent( new Event( 'mousedown', { cancelable: true } ) );
+
+						expect( ret ).to.true;
+					} );
+				} );
+			} );
 		} );
 	} );
 
@@ -304,14 +377,14 @@ describe( 'BlockToolbar', () => {
 		} );
 
 		it( 'should display the button when the first selected block is an object', () => {
-			setData( editor.model, '[<image src="/assets/sample.png"><caption>foo</caption></image>]' );
+			setData( editor.model, '[<imageBlock src="/assets/sample.png"><caption>foo</caption></imageBlock>]' );
 
 			expect( blockToolbar.buttonView.isVisible ).to.be.true;
 		} );
 
 		// This test makes no sense now, but so do all other tests here (see https://github.com/ckeditor/ckeditor5/issues/1522).
 		it( 'should not display the button when the selection is inside a limit element', () => {
-			setData( editor.model, '<image src="/assets/sample.png"><caption>f[]oo</caption></image>' );
+			setData( editor.model, '<imageBlock src="/assets/sample.png"><caption>f[]oo</caption></imageBlock>' );
 
 			expect( blockToolbar.buttonView.isVisible ).to.be.false;
 		} );
@@ -335,7 +408,7 @@ describe( 'BlockToolbar', () => {
 			} ).then( editor => {
 				const blockToolbar = editor.plugins.get( BlockToolbar );
 
-				setData( editor.model, '[<image src="/assets/sample.png"></image>]' );
+				setData( editor.model, '[<imageBlock src="/assets/sample.png"></imageBlock>]' );
 
 				expect( blockToolbar.buttonView.isVisible ).to.be.false;
 
@@ -599,7 +672,7 @@ describe( 'BlockToolbar', () => {
 			blockToolbar.buttonView.isVisible = true;
 			blockToolbar.panelView.isVisible = true;
 
-			editor.isReadOnly = true;
+			editor.enableReadOnlyMode( 'unit-test' );
 
 			expect( blockToolbar.buttonView.isVisible ).to.be.false;
 			expect( blockToolbar.panelView.isVisible ).to.be.false;
@@ -610,11 +683,11 @@ describe( 'BlockToolbar', () => {
 
 			expect( blockToolbar.buttonView.isVisible ).to.true;
 
-			editor.isReadOnly = true;
+			editor.enableReadOnlyMode( 'unit-test' );
 
 			expect( blockToolbar.buttonView.isVisible ).to.false;
 
-			editor.isReadOnly = false;
+			editor.disableReadOnlyMode( 'unit-test' );
 
 			expect( blockToolbar.buttonView.isVisible ).to.be.true;
 		} );
@@ -641,7 +714,7 @@ describe( 'BlockToolbar', () => {
 			blockToolbar.buttonView.isVisible = true;
 			blockToolbar.panelView.isVisible = false;
 
-			editor.isReadOnly = true;
+			editor.enableReadOnlyMode( 'unit-test' );
 
 			expect( blockToolbar.buttonView.isVisible ).to.be.false;
 			expect( blockToolbar.panelView.isVisible ).to.be.false;
@@ -688,6 +761,96 @@ describe( 'BlockToolbar', () => {
 			blockToolbar.destroy();
 
 			sinon.assert.calledOnce( destroySpy );
+		} );
+	} );
+
+	describe( 'multi-root integration', () => {
+		it( 'should not throw if there are not roots in the editor', () => {
+			return MultiRootEditor.create( {}, {
+				plugins: [ BlockToolbar, Heading, HeadingButtonsUI, Paragraph, ParagraphButtonUI, BlockQuote, Image, ImageCaption ],
+				blockToolbar: [ 'paragraph', 'heading1', 'heading2', 'blockQuote' ]
+			} ).then( newEditor => {
+				return newEditor.destroy();
+			} );
+		} );
+
+		it( 'should set a proper toolbar max-width based on selected editable', async () => {
+			const elFoo = document.createElement( 'div' );
+			elFoo.innerHTML = '<p>Foo</p>';
+			document.body.appendChild( elFoo );
+
+			const elBar = document.createElement( 'div' );
+			elBar.innerHTML = '<p>Bar</p>';
+			document.body.appendChild( elBar );
+
+			const multiRootEditor = await MultiRootEditor.create( { foo: elFoo, bar: elBar }, {
+				plugins: [ BlockToolbar, Heading, HeadingButtonsUI, Paragraph, ParagraphButtonUI, BlockQuote, Image, ImageCaption ],
+				blockToolbar: [ 'paragraph', 'heading1', 'heading2', 'blockQuote' ]
+			} );
+
+			blockToolbar = multiRootEditor.plugins.get( BlockToolbar );
+			multiRootEditor.ui.focusTracker.isFocused = true;
+
+			const viewFoo = multiRootEditor.ui.getEditableElement( 'foo' );
+			const viewBar = multiRootEditor.ui.getEditableElement( 'bar' );
+
+			testUtils.sinon.stub( viewFoo, 'getBoundingClientRect' ).returns( {
+				left: 100,
+				width: 200
+			} );
+
+			testUtils.sinon.stub( viewBar, 'getBoundingClientRect' ).returns( {
+				left: 100,
+				width: 300
+			} );
+
+			testUtils.sinon.stub( blockToolbar.buttonView.element, 'getBoundingClientRect' ).returns( {
+				left: 60,
+				width: 40
+			} );
+
+			// Starting, default value.
+			expect( blockToolbar.toolbarView.maxWidth ).to.equal( 'auto' );
+
+			multiRootEditor.model.change( writer => {
+				writer.setSelection( multiRootEditor.model.document.getRoot( 'foo' ).getChild( 0 ), 0 );
+			} );
+
+			// Fire the callback after the selection was moved to `foo` root.
+			resizeCallback( [ {
+				target: viewFoo
+			} ] );
+
+			// Expected value given the size of `foo` editable.
+			expect( blockToolbar.toolbarView.maxWidth ).to.equal( '240px' );
+
+			// Resize `bar` editable.
+			// It is not observed at the moment as the selection is in `foo` root.
+			// This callback should not affect the toolbar size.
+			resizeCallback( [ {
+				target: viewBar
+			} ] );
+
+			// Expected value same as previously.
+			expect( blockToolbar.toolbarView.maxWidth ).to.equal( '240px' );
+
+			// Move selection to `bar` root.
+			multiRootEditor.model.change( writer => {
+				writer.setSelection( multiRootEditor.model.document.getRoot( 'bar' ).getChild( 0 ), 0 );
+			} );
+
+			// Resize `bar` editable.
+			resizeCallback( [ {
+				target: viewBar
+			} ] );
+
+			// Expected value given the size of `bar` editable.
+			expect( blockToolbar.toolbarView.maxWidth ).to.equal( '340px' );
+
+			elFoo.remove();
+			elBar.remove();
+
+			return multiRootEditor.destroy();
 		} );
 	} );
 } );

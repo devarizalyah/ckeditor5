@@ -1,47 +1,32 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 /* globals $, window, console:false */
 
 // Basic classes to create an editor.
-import Editor from '@ckeditor/ckeditor5-core/src/editor/editor';
-import EditorUI from '@ckeditor/ckeditor5-core/src/editor/editorui';
-import EditorUIView from '@ckeditor/ckeditor5-ui/src/editorui/editoruiview';
-import InlineEditableUIView from '@ckeditor/ckeditor5-ui/src/editableui/inline/inlineeditableuiview';
-import HtmlDataProcessor from '@ckeditor/ckeditor5-engine/src/dataprocessor/htmldataprocessor';
-import ElementReplacer from '@ckeditor/ckeditor5-utils/src/elementreplacer';
-
-// Interfaces to extend basic Editor API.
-import DataApiMixin from '@ckeditor/ckeditor5-core/src/editor/utils/dataapimixin';
-import ElementApiMixin from '@ckeditor/ckeditor5-core/src/editor/utils/elementapimixin';
-
-// Helper function for adding interfaces to the Editor class.
-import mix from '@ckeditor/ckeditor5-utils/src/mix';
-
-// Helper function that gets data from HTML element that the Editor is attached to.
-import getDataFromElement from '@ckeditor/ckeditor5-utils/src/dom/getdatafromelement';
-
-// Helper function that binds editor with HTMLForm element.
-import attachToForm from '@ckeditor/ckeditor5-core/src/editor/utils/attachtoform';
-
-// Basic features that every editor should enable.
-import Clipboard from '@ckeditor/ckeditor5-clipboard/src/clipboard';
-import Enter from '@ckeditor/ckeditor5-enter/src/enter';
-import Typing from '@ckeditor/ckeditor5-typing/src/typing';
-import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
-import UndoEditing from '@ckeditor/ckeditor5-undo/src/undoediting';
-
 // Basic features to associated with the edited content.
-import BoldEditing from '@ckeditor/ckeditor5-basic-styles/src/bold/boldediting';
-import ItalicEditing from '@ckeditor/ckeditor5-basic-styles/src/italic/italicediting';
-import UnderlineEditing from '@ckeditor/ckeditor5-basic-styles/src/underline/underlineediting';
-import HeadingEditing from '@ckeditor/ckeditor5-heading/src/headingediting';
-
-// The easy image integration.
-import EasyImage from '@ckeditor/ckeditor5-easy-image/src/easyimage';
+import { BoldEditing, ItalicEditing, UnderlineEditing } from '@ckeditor/ckeditor5-basic-styles';
+import { Clipboard } from '@ckeditor/ckeditor5-clipboard';
+import { CloudServices } from '@ckeditor/ckeditor5-cloud-services';
 import { CS_CONFIG } from '@ckeditor/ckeditor5-cloud-services/tests/_utils/cloud-services-config';
+// Interfaces to extend basic Editor API.
+// Helper function that binds editor with HTMLForm element.
+import { DataApiMixin, Editor, ElementApiMixin, attachToForm } from '@ckeditor/ckeditor5-core';
+// The easy image integration.
+import { EasyImage } from '@ckeditor/ckeditor5-easy-image';
+import { Enter } from '@ckeditor/ckeditor5-enter';
+import { HeadingEditing } from '@ckeditor/ckeditor5-heading';
+import { Image, ImageUpload } from '@ckeditor/ckeditor5-image';
+// Basic features that every editor should enable.
+import { Paragraph } from '@ckeditor/ckeditor5-paragraph';
+import { Typing } from '@ckeditor/ckeditor5-typing';
+import { EditorUI, EditorUIView, InlineEditableUIView } from '@ckeditor/ckeditor5-ui';
+import { UndoEditing } from '@ckeditor/ckeditor5-undo';
+// Helper function for adding interfaces to the Editor class.
+// Helper function that gets data from HTML element that the Editor is attached to.
+import { ElementReplacer, getDataFromElement, mix } from '@ckeditor/ckeditor5-utils';
 
 // Extending the Editor class, which brings base editor API.
 export default class BootstrapEditor extends Editor {
@@ -50,9 +35,6 @@ export default class BootstrapEditor extends Editor {
 
 		// Remember the element the editor is created with.
 		this.sourceElement = element;
-
-		// Use the HTML data processor in this editor.
-		this.data.processor = new HtmlDataProcessor( this.data.viewDocument );
 
 		// Create the ("main") root element of the model tree.
 		this.model.document.createRoot();
@@ -138,6 +120,10 @@ class BootstrapEditorUI extends EditorUI {
 		const view = this.view;
 		const editingView = editor.editing.view;
 
+		// Make sure the EditorUIView is rendered. This will, for instance, create a place for UI elements
+		// like floating panels detached from the main editor UI in DOM.
+		this._view.render();
+
 		// Create an editing root in the editing layer. It will correspond with the
 		// document root created in the constructor().
 		const editingRoot = editingView.document.getRoot();
@@ -153,9 +139,6 @@ class BootstrapEditorUI extends EditorUI {
 		// Register editable element so it is available via getEditableElement() method.
 		this.setEditableElement( view.editable.name, editableElement );
 
-		// Let the editable UI element respond to the changes in the global editor focus tracker
-		// and let the focus tracker know about the editable element.
-		this.focusTracker.add( editableElement );
 		view.editable.bind( 'isFocused' ).to( this.focusTracker );
 
 		// Bind the editable UI element to the editing view, making it an end– and entry–point
@@ -174,14 +157,14 @@ class BootstrapEditorUI extends EditorUI {
 	}
 
 	destroy() {
+		super.destroy();
+
 		// Restore the original editor#element.
 		this._elementReplacer.restore();
 
 		// Destroy the view.
 		this._view.editable.destroy();
 		this._view.destroy();
-
-		super.destroy();
 	}
 
 	// This method activates Bold, Italic, Underline, Undo and Redo buttons in the toolbar.
@@ -299,16 +282,32 @@ class BootstrapEditorUI extends EditorUI {
 BootstrapEditor
 	.create( $( '#editor' ).get( 0 ), {
 		plugins: [
-			Clipboard, Enter, Typing, Paragraph, EasyImage,
+			Clipboard, Enter, Typing, Paragraph, EasyImage, Image, ImageUpload, CloudServices,
 			BoldEditing, ItalicEditing, UnderlineEditing, HeadingEditing, UndoEditing
 		],
 		cloudServices: CS_CONFIG
 	} )
 	.then( editor => {
 		window.editor = editor;
+		const readOnlyLock = Symbol( 'read-only-lock' );
+		const button = window.document.getElementById( 'toggle-readonly' );
+		let isReadOnly = false;
 
-		$( '#toggle-readonly' ).on( 'click', () => {
-			editor.isReadOnly = !editor.isReadOnly;
+		button.addEventListener( 'click', () => {
+			if ( isReadOnly ) {
+				editor.disableReadOnlyMode( readOnlyLock );
+			}
+			else {
+				editor.enableReadOnlyMode( readOnlyLock );
+			}
+
+			isReadOnly = !isReadOnly;
+
+			button.textContent = isReadOnly ?
+				'Turn off read-only mode' :
+				'Turn on read-only mode';
+
+			editor.editing.view.focus();
 		} );
 	} )
 	.catch( err => {

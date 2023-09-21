@@ -2,15 +2,15 @@
 category: api-reference
 ---
 
-# CKEditor 5 headings feature
+# CKEditor&nbsp;5 headings feature
 
 [![npm version](https://badge.fury.io/js/%40ckeditor%2Fckeditor5-heading.svg)](https://www.npmjs.com/package/@ckeditor/ckeditor5-heading)
 
-This package implements the headings and title features for CKEditor 5.
+This package implements the headings and title features for CKEditor&nbsp;5.
 
 ## Documentation
 
-See the {@link features/headings Headings} and {@link features/title Document title} feature guides and the documentation of the following plugins:
+See the {@link features/headings Headings} and {@link features/title document title feature guides} and the documentation of the following plugins:
 
 * {@link module:heading/heading~Heading},
 * {@link module:heading/headingbuttonsui~HeadingButtonsUI},
@@ -24,7 +24,7 @@ npm install --save @ckeditor/ckeditor5-heading
 
 ## Contribute
 
-The source code of this package is available on GitHub in https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-heading.
+The source code of this package is available on GitHub in [https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-heading](https://github.com/ckeditor/ckeditor5/tree/master/packages/ckeditor5-heading).
 
 ## External links
 

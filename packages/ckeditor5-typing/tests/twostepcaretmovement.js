@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -14,8 +14,8 @@ import Position from '@ckeditor/ckeditor5-engine/src/model/position';
 import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 import { keyCodes } from '@ckeditor/ckeditor5-utils/src/keyboard';
 import { setData } from '@ckeditor/ckeditor5-engine/src/dev-utils/model';
-
-import '@ckeditor/ckeditor5-core/tests/_utils/assertions/attribute';
+import toArray from '@ckeditor/ckeditor5-utils/src/toarray';
+import priorities from '@ckeditor/ckeditor5-utils/src/priorities';
 
 describe( 'TwoStepCaretMovement()', () => {
 	let editor, model, emitter, selection, view, plugin;
@@ -40,12 +40,18 @@ describe( 'TwoStepCaretMovement()', () => {
 				allowAttributes: [ 'a', 'b', 'c' ],
 				allowIn: '$root'
 			} );
+			editor.model.schema.register( 'inlineObject', {
+				inheritAllFrom: '$inlineObject',
+				allowAttributes: [ 'src' ]
+			} );
 
 			model.schema.register( 'paragraph', { inheritAllFrom: '$block' } );
 			editor.conversion.for( 'upcast' ).elementToAttribute( { view: 'a', model: 'a' } );
 			editor.conversion.for( 'upcast' ).elementToAttribute( { view: 'b', model: 'b' } );
 			editor.conversion.for( 'upcast' ).elementToAttribute( { view: 'c', model: 'c' } );
 			editor.conversion.elementToElement( { model: 'paragraph', view: 'p' } );
+			editor.conversion.elementToElement( { model: 'inlineObject', view: 'inlineObject' } );
+			editor.conversion.attributeToAttribute( { model: 'src', view: 'src' } );
 
 			plugin.registerAttribute( 'a' );
 		} );
@@ -214,6 +220,31 @@ describe( 'TwoStepCaretMovement()', () => {
 				'→',
 				// <paragraph><$text a="1">bar</$text></paragraph><paragraph>fo[]o</paragraph>
 				{ selectionAttributes: [ 'b' ], isGravityOverridden: false, preventDefault: 1, evtStop: 1 }
+			] );
+		} );
+
+		it( 'should copy attributes from an inline object if are allowed on text', () => {
+			setData( model, '<paragraph>fo[]o<inlineObject a="1" b="2" src="3"></inlineObject></paragraph>' );
+
+			testTwoStepCaretMovement( [
+				{ selectionAttributes: [], isGravityOverridden: false, preventDefault: 0, evtStop: 0, caretPosition: [ 0, 2 ] },
+				'→',
+				{ selectionAttributes: [], isGravityOverridden: false, preventDefault: 0, evtStop: 0, caretPosition: [ 0, 3 ] },
+				'→',
+				{ selectionAttributes: [ 'a', 'b' ], isGravityOverridden: true, preventDefault: 1, evtStop: 1, caretPosition: [ 0, 3 ] }
+			] );
+		} );
+
+		it( 'should copy attributes from an inline object if are allowed on text and not disabled by copyFromObject', () => {
+			model.schema.setAttributeProperties( 'c', { copyFromObject: false } );
+			setData( model, '<paragraph>fo[]o<inlineObject a="1" b="2" c="3"></inlineObject></paragraph>' );
+
+			testTwoStepCaretMovement( [
+				{ selectionAttributes: [], isGravityOverridden: false, preventDefault: 0, evtStop: 0, caretPosition: [ 0, 2 ] },
+				'→',
+				{ selectionAttributes: [], isGravityOverridden: false, preventDefault: 0, evtStop: 0, caretPosition: [ 0, 3 ] },
+				'→',
+				{ selectionAttributes: [ 'a', 'b' ], isGravityOverridden: true, preventDefault: 1, evtStop: 1, caretPosition: [ 0, 3 ] }
 			] );
 		} );
 	} );
@@ -410,6 +441,31 @@ describe( 'TwoStepCaretMovement()', () => {
 				{ selectionAttributes: [], isGravityOverridden: false, preventDefault: 1, evtStop: 1, caretPosition: [ 1, 0 ] },
 				'←',
 				{ selectionAttributes: [ 'b' ], isGravityOverridden: false, preventDefault: 1, evtStop: 1, caretPosition: [ 0, 3 ] }
+			] );
+		} );
+
+		it( 'should copy attributes from an inline object if are allowed on text', () => {
+			setData( model, '<paragraph><inlineObject a="1" b="2" src="3"></inlineObject>f[]oo</paragraph>' );
+
+			testTwoStepCaretMovement( [
+				{ selectionAttributes: [], isGravityOverridden: false, preventDefault: 0, evtStop: 0, caretPosition: [ 0, 2 ] },
+				'←',
+				{ selectionAttributes: [], isGravityOverridden: true, preventDefault: 0, evtStop: 0, caretPosition: [ 0, 1 ] },
+				'←',
+				{ selectionAttributes: [ 'a', 'b' ], isGravityOverridden: false, preventDefault: 1, evtStop: 1, caretPosition: [ 0, 1 ] }
+			] );
+		} );
+
+		it( 'should copy attributes from an inline object if are allowed on text and not disabled by copyFromObject', () => {
+			model.schema.setAttributeProperties( 'c', { copyFromObject: false } );
+			setData( model, '<paragraph><inlineObject a="1" b="2" c="3"></inlineObject>f[]oo</paragraph>' );
+
+			testTwoStepCaretMovement( [
+				{ selectionAttributes: [], isGravityOverridden: false, preventDefault: 0, evtStop: 0, caretPosition: [ 0, 2 ] },
+				'←',
+				{ selectionAttributes: [], isGravityOverridden: true, preventDefault: 0, evtStop: 0, caretPosition: [ 0, 1 ] },
+				'←',
+				{ selectionAttributes: [ 'a', 'b' ], isGravityOverridden: false, preventDefault: 1, evtStop: 1, caretPosition: [ 0, 1 ] }
 			] );
 		} );
 	} );
@@ -735,25 +791,28 @@ describe( 'TwoStepCaretMovement()', () => {
 		} );
 	} );
 
-	it( 'should listen with the high+1 priority on view.document#keydown', () => {
+	it( 'should listen with the higher priority than widget type around', () => {
+		const highestPlusPrioritySpy = sinon.spy().named( 'highestPrioritySpy' );
 		const highestPrioritySpy = sinon.spy().named( 'highestPrioritySpy' );
 		const highPrioritySpy = sinon.spy().named( 'highPrioritySpy' );
 		const normalPrioritySpy = sinon.spy().named( 'normalPrioritySpy' );
 
 		setData( model, '<$text c="true">foo[]</$text><$text a="true" b="true">bar</$text>' );
 
-		emitter.listenTo( view.document, 'keydown', highestPrioritySpy, { priority: 'highest' } );
-		emitter.listenTo( view.document, 'keydown', highPrioritySpy, { priority: 'high' } );
-		emitter.listenTo( view.document, 'keydown', normalPrioritySpy, { priority: 'normal' } );
+		emitter.listenTo( view.document, 'arrowKey', highestPlusPrioritySpy, { context: '$text', priority: priorities.highest + 1 } );
+		emitter.listenTo( view.document, 'arrowKey', highestPrioritySpy, { context: '$text', priority: 'highest' } );
+		emitter.listenTo( view.document, 'arrowKey', highPrioritySpy, { context: '$text', priority: 'high' } );
+		emitter.listenTo( view.document, 'arrowKey', normalPrioritySpy, { context: '$text', priority: 'normal' } );
 
 		fireKeyDownEvent( {
 			keyCode: keyCodes.arrowright,
 			preventDefault: preventDefaultSpy
 		} );
 
-		expect( highestPrioritySpy ).to.be.calledOnce;
-		expect( preventDefaultSpy ).to.be.calledImmediatelyAfter( highestPrioritySpy );
+		expect( highestPlusPrioritySpy ).to.be.calledOnce;
+		expect( preventDefaultSpy ).to.be.calledImmediatelyAfter( highestPlusPrioritySpy );
 
+		expect( highestPrioritySpy ).not.to.be.called;
 		expect( highPrioritySpy ).not.to.be.called;
 		expect( normalPrioritySpy ).not.to.be.called;
 	} );
@@ -817,7 +876,7 @@ describe( 'TwoStepCaretMovement()', () => {
 		] );
 
 		// Simulate an external text insertion BEFORE the user selection to trigger #change:range.
-		model.enqueueChange( 'transparent', writer => {
+		model.enqueueChange( { isUndoable: false }, writer => {
 			writer.insertText( 'x', selection.getFirstPosition().getShiftedBy( -2 ) );
 		} );
 
@@ -963,11 +1022,10 @@ describe( 'TwoStepCaretMovement()', () => {
 			else {
 				const stepIndex = scenario.indexOf( step );
 				const stepString = `in step #${ stepIndex }`;
-				let caretPosition = step.caretPosition;
 
-				if ( caretPosition !== undefined ) {
+				if ( step.caretPosition !== undefined ) {
 					// Normalize position
-					caretPosition = Array.isArray( step.caretPosition ) ? caretPosition : [ caretPosition ];
+					const caretPosition = toArray( step.caretPosition );
 					expect( selection.getFirstPosition(), `in step #${ stepIndex }, selection's first position` )
 						.to.have.deep.property( 'path', caretPosition );
 				}
@@ -981,4 +1039,3 @@ describe( 'TwoStepCaretMovement()', () => {
 		}
 	}
 } );
-

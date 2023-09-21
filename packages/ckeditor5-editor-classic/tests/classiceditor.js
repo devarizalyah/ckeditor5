@@ -1,28 +1,29 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
 /* globals document, Event, console */
 
+import ClassicEditor from '../src/classiceditor';
 import ClassicEditorUI from '../src/classiceditorui';
 import ClassicEditorUIView from '../src/classiceditoruiview';
 
 import HtmlDataProcessor from '@ckeditor/ckeditor5-engine/src/dataprocessor/htmldataprocessor';
 
-import ClassicEditor from '../src/classiceditor';
+import Context from '@ckeditor/ckeditor5-core/src/context';
+import EditorWatchdog from '@ckeditor/ckeditor5-watchdog/src/editorwatchdog';
+import ContextWatchdog from '@ckeditor/ckeditor5-watchdog/src/contextwatchdog';
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
 import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
 import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
-import DataApiMixin from '@ckeditor/ckeditor5-core/src/editor/utils/dataapimixin';
-import ElementApiMixin from '@ckeditor/ckeditor5-core/src/editor/utils/elementapimixin';
 import RootElement from '@ckeditor/ckeditor5-engine/src/model/rootelement';
+import CKEditorError from '@ckeditor/ckeditor5-utils/src/ckeditorerror';
 
 import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 
 import ArticlePluginSet from '@ckeditor/ckeditor5-core/tests/_utils/articlepluginset';
 import { describeMemoryUsage, testMemoryUsage } from '@ckeditor/ckeditor5-core/tests/_utils/memory';
-import { removeEditorBodyOrphans } from '@ckeditor/ckeditor5-core/tests/_utils/cleanup';
 
 describe( 'ClassicEditor', () => {
 	let editor, editorElement;
@@ -51,12 +52,13 @@ describe( 'ClassicEditor', () => {
 			expect( editor.data.processor ).to.be.instanceof( HtmlDataProcessor );
 		} );
 
-		it( 'has a Data Interface', () => {
-			expect( testUtils.isMixed( ClassicEditor, DataApiMixin ) ).to.true;
+		it( 'mixes DataApiMixin', () => {
+			expect( ClassicEditor.prototype ).have.property( 'setData' ).to.be.a( 'function' );
+			expect( ClassicEditor.prototype ).have.property( 'getData' ).to.be.a( 'function' );
 		} );
 
-		it( 'has a Element Interface', () => {
-			expect( testUtils.isMixed( ClassicEditor, ElementApiMixin ) ).to.true;
+		it( 'mixes ElementApiMixin', () => {
+			expect( ClassicEditor.prototype ).have.property( 'updateSourceElement' ).to.be.a( 'function' );
 		} );
 
 		it( 'creates main root element', () => {
@@ -126,6 +128,39 @@ describe( 'ClassicEditor', () => {
 
 					editorElement.remove();
 				} );
+			} );
+		} );
+
+		describe( 'config.initialData', () => {
+			it( 'if not set, is set using DOM element data', () => {
+				const editorElement = document.createElement( 'div' );
+				editorElement.innerHTML = '<p>Foo</p>';
+
+				const editor = new ClassicEditor( editorElement );
+
+				expect( editor.config.get( 'initialData' ) ).to.equal( '<p>Foo</p>' );
+			} );
+
+			it( 'if not set, is set using data passed in constructor', () => {
+				const editor = new ClassicEditor( '<p>Foo</p>' );
+
+				expect( editor.config.get( 'initialData' ) ).to.equal( '<p>Foo</p>' );
+			} );
+
+			it( 'if set, is not overwritten with DOM element data', () => {
+				const editorElement = document.createElement( 'div' );
+				editorElement.innerHTML = '<p>Foo</p>';
+
+				const editor = new ClassicEditor( editorElement, { initialData: '<p>Bar</p>' } );
+
+				expect( editor.config.get( 'initialData' ) ).to.equal( '<p>Bar</p>' );
+			} );
+
+			it( 'it should throw if config.initialData is set and initial data is passed in constructor', () => {
+				expect( () => {
+					// eslint-disable-next-line no-new
+					new ClassicEditor( '<p>Foo</p>', { initialData: '<p>Bar</p>' } );
+				} ).to.throw( CKEditorError, 'editor-create-initial-data' );
 			} );
 		} );
 	} );
@@ -205,13 +240,15 @@ describe( 'ClassicEditor', () => {
 			} );
 		} );
 
-		it( 'throws if initial data is passed in Editor#create and config.initialData is also used', done => {
-			ClassicEditor.create( '<p>Hello world!</p>', {
-				initialData: '<p>I am evil!</p>',
+		// https://github.com/ckeditor/ckeditor5/issues/8974
+		it( 'initializes with empty content if config.initialData is set to an empty string', () => {
+			return ClassicEditor.create( editorElement, {
+				initialData: '',
 				plugins: [ Paragraph ]
-			} ).catch( () => {
-				removeEditorBodyOrphans();
-				done();
+			} ).then( editor => {
+				expect( editor.getData() ).to.equal( '' );
+
+				editor.destroy();
 			} );
 		} );
 
@@ -302,7 +339,19 @@ describe( 'ClassicEditor', () => {
 				} );
 		} );
 
+		it( 'don\'t set the data back to the editor element', () => {
+			editor.setData( '<p>foo</p>' );
+
+			return editor.destroy()
+				.then( () => {
+					expect( editorElement.innerHTML ).to.equal( '' );
+				} );
+		} );
+
+		// Adding `updateSourceElementOnDestroy` config to the editor allows setting the data
+		// back to the source element after destroy.
 		it( 'sets the data back to the editor element', () => {
+			editor.config.set( 'updateSourceElementOnDestroy', true );
 			editor.setData( '<p>foo</p>' );
 
 			return editor.destroy()
@@ -340,6 +389,20 @@ describe( 'ClassicEditor', () => {
 		} );
 	} );
 
+	describe( 'static fields', () => {
+		it( 'ClassicEditor.Context', () => {
+			expect( ClassicEditor.Context ).to.equal( Context );
+		} );
+
+		it( 'ClassicEditor.EditorWatchdog', () => {
+			expect( ClassicEditor.EditorWatchdog ).to.equal( EditorWatchdog );
+		} );
+
+		it( 'ClassicEditor.ContextWatchdog', () => {
+			expect( ClassicEditor.ContextWatchdog ).to.equal( ContextWatchdog );
+		} );
+	} );
+
 	describeMemoryUsage( () => {
 		testMemoryUsage(
 			'should not grow on multiple create/destroy',
@@ -348,7 +411,7 @@ describe( 'ClassicEditor', () => {
 					plugins: [ ArticlePluginSet ],
 					toolbar: [ 'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote' ],
 					image: {
-						toolbar: [ 'imageStyle:full', 'imageStyle:side', '|', 'imageTextAlternative' ]
+						toolbar: [ 'imageStyle:block', 'imageStyle:side', '|', 'imageTextAlternative' ]
 					}
 				} ) );
 	} );
